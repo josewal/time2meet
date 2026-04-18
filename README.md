@@ -21,25 +21,26 @@ A minimal, open-source when2meet clone running on Cloudflare Workers + Turso. No
 
 ## Quick start (local dev)
 
+Install deps and the turso CLI:
+
 ```bash
 npm install
+# one-time: curl -sSfL https://get.tur.so/install.sh | bash
 ```
 
-Create a Turso DB:
+Start a local libSQL server (no account, no real DB needed):
 
 ```bash
-# install turso CLI once: curl -sSfL https://get.tur.so/install.sh | bash
-turso auth signup     # or: turso auth login
-turso db create w2mb-dev
-turso db show w2mb-dev --url          # copy
-turso db tokens create w2mb-dev       # copy
+mkdir -p .data
+turso dev --db-file .data/local.db
 ```
 
-Create `.dev.vars` at the project root:
+In another terminal, create `.dev.vars` at the project root. These values
+are local-only — not real secrets:
 
 ```
-DB_URL=libsql://...
-DB_AUTH_TOKEN=...
+DB_URL=http://127.0.0.1:8080
+DB_AUTH_TOKEN=dev
 COOKIE_SECRET=<random 32+ byte string>
 ```
 
@@ -49,15 +50,10 @@ Generate a COOKIE_SECRET:
 node -e "console.log(crypto.randomBytes(32).toString('hex'))"
 ```
 
-Apply schema:
+Apply schema and run the Worker:
 
 ```bash
 npm run migrate
-```
-
-Run locally:
-
-```bash
 npm run dev
 ```
 
@@ -74,11 +70,19 @@ wrangler secret put DB_AUTH_TOKEN
 wrangler secret put COOKIE_SECRET
 ```
 
-Manual deploy:
+Manual deploy (no secrets on disk — `migrate:prod` mints a short-lived
+10-minute Turso token via the `turso` CLI):
 
 ```bash
-npm run migrate:prod   # reads .prod.vars
+turso auth login            # one-time
+npm run migrate:prod        # scripts/migrate-prod.sh
 npm run deploy
+```
+
+Override the DB name if it's not `w2mb-prod`:
+
+```bash
+TURSO_DB=my-db npm run migrate:prod
 ```
 
 ### Automated deploys (GitHub Actions)

@@ -8,7 +8,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "migrate": "tsx scripts/migrate.ts",
-    "migrate:prod": "tsx scripts/migrate.ts --env prod",
+    "migrate:prod": "bash scripts/migrate-prod.sh",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
