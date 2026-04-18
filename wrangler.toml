@@ -1,0 +1,13 @@
+name = "when2meet-better"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Secrets (set via `wrangler secret put <NAME>`):
+#   DB_URL           — Turso libSQL URL, e.g. libsql://w2mb-<user>.turso.io
+#   DB_AUTH_TOKEN    — Turso auth token
+#   COOKIE_SECRET    — random 32+ byte string for HMAC-signing cookies
