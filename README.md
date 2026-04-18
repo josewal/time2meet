@@ -101,23 +101,31 @@ Override the DB name if it's not `w2mb-prod`:
 TURSO_DB=my-db npm run migrate:prod
 ```
 
-### Automated deploys (GitHub Actions)
+### Automated deploys (Cloudflare Workers Builds)
 
-- `.github/workflows/ci.yml` — on PR: typecheck + e2e (uses a local `turso dev`; no external DB)
-- `.github/workflows/deploy.yml` — on push to `main`: deploy Worker → smoke test
+Deploys are handled directly by Cloudflare — no GitHub Actions tokens
+required. One-time setup:
 
-Prod DB migrations are **not** run in CI — run `npm run migrate:prod`
-from your laptop before pushing any schema-changing commit. Keeps the
-Turso token off GitHub's secret store.
+1. Cloudflare dashboard → Workers & Pages → `when2meet-better` → Settings → Builds
+2. Connect the GitHub repo, branch `main`
+3. Build command: `npm ci`, deploy command: `npx wrangler deploy`
 
-Required repo **secrets**:
+Every push to `main` triggers a Cloudflare-side build + deploy. Secrets
+already set via `wrangler secret put` apply. No GH repo secrets needed.
 
-- `CLOUDFLARE_API_TOKEN` — Cloudflare API token with `Workers Scripts:Edit` + `Account:Read`
-- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID
+`.github/workflows/ci.yml` runs typecheck + e2e on pushes and PRs as a
+signal layer; it does not deploy.
 
-Optional repo **variable**:
+Prod DB migrations are run manually — `npm run migrate:prod` from your
+laptop before pushing any schema-changing commit. Keeps the Turso token
+off GitHub's and Cloudflare's build envs.
 
-- `APP_URL` — public URL used by the smoke test (e.g. `https://when2meet.example.com`). If unset, falls back to the `workers.dev` URL returned by `wrangler deploy`.
+After a deploy, verify with `bash scripts/smoke.sh` pointing at the
+deployed URL:
+
+```bash
+APP_URL=https://when2meet-better.<subdomain>.workers.dev bash scripts/smoke.sh
+```
 
 ## Project layout
 
