@@ -38,7 +38,7 @@ pagesEventRoute.get("/event/:id", async (c) => {
       ogImageUrl,
       ogUrl,
     },
-    eventView(ev, me, parts),
+    eventView(ev, me, parts, ogUrl),
   );
   return c.html(html);
 });

@@ -9,47 +9,15 @@ import {
   type ParticipantRow,
 } from "../db/queries";
 import { hashPassword, verifyPassword } from "../lib/password";
-import { parseSlot } from "../lib/slots";
 import { buildSetCookie, signCookie } from "../lib/cookies";
 import {
+  deriveDaysAndPerDay,
   gridReady,
   identifyErrorFragment,
   type EventClientData,
 } from "../views/fragments";
 
 export const identifyRoute = new Hono<{ Bindings: Env }>();
-
-function deriveDaysAndPerDay(slots: string[]): {
-  days: string[];
-  slotsPerDay: number;
-} {
-  if (slots.length === 0) return { days: [], slotsPerDay: 0 };
-  const days: string[] = [];
-  const seen = new Set<string>();
-  for (const s of slots) {
-    let date: string;
-    try {
-      date = parseSlot(s).date;
-    } catch {
-      continue;
-    }
-    if (!seen.has(date)) {
-      seen.add(date);
-      days.push(date);
-    }
-  }
-  const firstDate = days[0];
-  let slotsPerDay = 0;
-  for (const s of slots) {
-    try {
-      if (parseSlot(s).date === firstDate) slotsPerDay++;
-      else break;
-    } catch {
-      break;
-    }
-  }
-  return { days, slotsPerDay };
-}
 
 function sendIdentifyError(c: Context<{ Bindings: Env }>, msg: string) {
   c.header("HX-Reswap", "innerHTML");
@@ -116,7 +84,7 @@ identifyRoute.post("/event/:id/identify", async (c) => {
 
   const signed = await signCookie(me.id, c.env.COOKIE_SECRET);
   const setCookie = buildSetCookie(`p_${eventId}`, signed, {
-    path: `/event/${eventId}`,
+    path: "/",
     maxAge: 2_592_000,
     secure: true,
   });

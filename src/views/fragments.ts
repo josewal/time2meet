@@ -9,8 +9,76 @@ export type EventClientData = {
   me: { id: string; name: string } | null;
 };
 
+export type HeatmapCell = {
+  count: number;
+  names: string[];
+};
+
 export function identifyErrorFragment(msg: string): string {
   return `<div class="error">${escape(msg)}</div>`;
+}
+
+export function deriveDaysAndPerDay(slots: string[]): {
+  days: string[];
+  slotsPerDay: number;
+} {
+  if (slots.length === 0) return { days: [], slotsPerDay: 0 };
+  const days: string[] = [];
+  const seen = new Set<string>();
+  for (const s of slots) {
+    let date: string;
+    try {
+      date = parseSlot(s).date;
+    } catch {
+      continue;
+    }
+    if (!seen.has(date)) {
+      seen.add(date);
+      days.push(date);
+    }
+  }
+  const firstDate = days[0];
+  let slotsPerDay = 0;
+  for (const s of slots) {
+    try {
+      if (parseSlot(s).date === firstDate) slotsPerDay++;
+      else break;
+    } catch {
+      break;
+    }
+  }
+  return { days, slotsPerDay };
+}
+
+function formatDayHeader(dateIso: string): string {
+  try {
+    const [y, m, d] = dateIso.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
+    return `${dow} ${m}/${d}`;
+  } catch {
+    return dateIso;
+  }
+}
+
+function gridHeaderRow(days: string[]): string {
+  const parts: string[] = ['<div class="grid-corner"></div>'];
+  for (const day of days) {
+    parts.push(
+      `<div class="grid-day-header">${escape(formatDayHeader(day))}</div>`,
+    );
+  }
+  return parts.join("");
+}
+
+function timeLabelFor(slots: string[], rowIndex: number): string {
+  const s = slots[rowIndex];
+  if (!s) return "";
+  try {
+    return parseSlot(s).time;
+  } catch {
+    return "";
+  }
 }
 
 export function gridMarkup(data: EventClientData): string {
@@ -18,26 +86,50 @@ export function gridMarkup(data: EventClientData): string {
   const cols = data.days.length;
   const parts: string[] = [];
   parts.push(
-    `<div id="grid" class="grid" data-cols="${cols}" data-rows="${rows}" style="grid-template-columns: repeat(${cols}, 1fr);">`,
+    `<div id="grid" class="grid" data-cols="${cols}" data-rows="${rows}" style="--cols:${cols};">`,
   );
-  parts.push('<div class="grid-corner"></div>');
-  for (const day of data.days) {
-    parts.push(`<div class="grid-day-header">${escape(day)}</div>`);
-  }
+  parts.push(gridHeaderRow(data.days));
   for (let r = 0; r < rows; r++) {
-    const firstOfDay = data.slots[r];
-    let timeLabel = "";
-    if (firstOfDay) {
-      try {
-        timeLabel = parseSlot(firstOfDay).time;
-      } catch {
-        timeLabel = "";
-      }
-    }
-    parts.push(`<div class="grid-time-label">${escape(timeLabel)}</div>`);
+    parts.push(
+      `<div class="grid-time-label">${escape(timeLabelFor(data.slots, r))}</div>`,
+    );
     for (let c = 0; c < cols; c++) {
       const slotIndex = c * rows + r;
       parts.push(`<div class="cell" data-slot="${slotIndex}"></div>`);
+    }
+  }
+  parts.push("</div>");
+  return parts.join("");
+}
+
+export function heatmapMarkup(
+  data: EventClientData,
+  cells: HeatmapCell[],
+  maxCount: number,
+  total: number,
+): string {
+  const rows = data.slotsPerDay;
+  const cols = data.days.length;
+  const parts: string[] = [];
+  parts.push(
+    `<div class="grid heatmap" style="--cols:${cols};">`,
+  );
+  parts.push(gridHeaderRow(data.days));
+  const denom = maxCount > 0 ? maxCount : 1;
+  for (let r = 0; r < rows; r++) {
+    parts.push(
+      `<div class="grid-time-label">${escape(timeLabelFor(data.slots, r))}</div>`,
+    );
+    for (let c = 0; c < cols; c++) {
+      const slotIndex = c * rows + r;
+      const cell = cells[slotIndex] ?? { count: 0, names: [] };
+      const intensity = cell.count / denom;
+      const title = cell.count > 0
+        ? `${cell.count}/${total}: ${cell.names.join(", ")}`
+        : `0/${total}`;
+      parts.push(
+        `<div class="cell heat" data-count="${cell.count}" style="--intensity:${intensity};" title="${escape(title)}"></div>`,
+      );
     }
   }
   parts.push("</div>");
