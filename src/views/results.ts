@@ -13,6 +13,20 @@ import {
   type HeatmapCell,
 } from "./fragments";
 
+const DOW_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatBestSlot(slot: string): string {
+  if (!slot) return "";
+  const date = slot.slice(0, 10);
+  const time = slot.slice(11);
+  const [y, m, d] = date.split("-").map(Number);
+  if (y === 1970) {
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return `${DOW_NAMES[dt.getUTCDay()]} ${time}`;
+  }
+  return slot;
+}
+
 export function results(event: EventRow, participants: ParticipantRow[]): string {
   const slots = event.slots;
   const n = participants.length;
@@ -56,7 +70,7 @@ export function results(event: EventRow, participants: ParticipantRow[]): string
   } else {
     const items = top
       .map((t) => {
-        const slotStr = slots[t.slotIndex];
+        const slotStr = formatBestSlot(slots[t.slotIndex]);
         const names = participantsAvailableAt(t.slotIndex, pcells)
           .map((a) => escape(a.name))
           .join(", ");

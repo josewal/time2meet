@@ -35,7 +35,7 @@ export function landing(): string {
           </div>
         </div>
         <div class="dp-dow-wrap">
-          <p class="muted dp-dow-hint">Pick any weekdays. We'll expand to the next 4 weeks.</p>
+          <p class="muted dp-dow-hint">Pick any weekdays. The grid will show one column per selected day, with no specific date.</p>
           <div class="dp-dow-grid"></div>
         </div>
         <div class="dp-summary muted">no dates selected</div>
