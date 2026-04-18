@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Install turso CLI
+        run: |
+          curl -sSfL https://get.tur.so/install.sh | bash -s -- --unattended
+          echo "$HOME/.turso" >> "$GITHUB_PATH"
+
+      - name: Start local libsql server
+        run: |
+          nohup turso dev --db-file /tmp/ci.db > /tmp/turso-dev.log 2>&1 &
+          echo $! > /tmp/turso-dev.pid
+          until curl -sf http://127.0.0.1:8080/v2 > /dev/null 2>&1 \
+            || curl -sf http://127.0.0.1:8080/ > /dev/null 2>&1; do
+            if ! kill -0 "$(cat /tmp/turso-dev.pid)" 2>/dev/null; then
+              echo "turso dev died:"
+              cat /tmp/turso-dev.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/turso-dev.log
+
+      - name: Apply schema
+        env:
+          DB_URL: http://127.0.0.1:8080
+          DB_AUTH_TOKEN: dev
+        run: npm run migrate
+
+      - name: Write .dev.vars for wrangler
+        run: |
+          cat > .dev.vars <<EOF
+          DB_URL=http://127.0.0.1:8080
+          DB_AUTH_TOKEN=dev
+          COOKIE_SECRET=ci-only-cookie-secret-0123456789abcdef0123456789abcdef
+          EOF
+
+      - name: E2E
+        run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

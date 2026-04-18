@@ -65,13 +65,37 @@ Open http://localhost:8787
 
 ## Deploy
 
+One-time setup:
+
 ```bash
 wrangler login
 wrangler secret put DB_URL
 wrangler secret put DB_AUTH_TOKEN
 wrangler secret put COOKIE_SECRET
+```
+
+Manual deploy:
+
+```bash
+npm run migrate:prod   # reads .prod.vars
 npm run deploy
 ```
+
+### Automated deploys (GitHub Actions)
+
+- `.github/workflows/ci.yml` — on PR: typecheck + e2e (uses a local `turso dev`; no external DB)
+- `.github/workflows/deploy.yml` — on push to `main`: migrate prod DB → deploy Worker → smoke test
+
+Required repo **secrets**:
+
+- `CLOUDFLARE_API_TOKEN` — Cloudflare API token with `Workers Scripts:Edit` + `Account:Read`
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID
+- `DB_URL` — Turso prod libSQL URL
+- `DB_AUTH_TOKEN` — Turso prod auth token
+
+Optional repo **variable**:
+
+- `APP_URL` — public URL used by the smoke test (e.g. `https://when2meet.example.com`). If unset, falls back to the `workers.dev` URL returned by `wrangler deploy`.
 
 ## Project layout
 

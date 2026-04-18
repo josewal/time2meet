@@ -33,22 +33,63 @@ function splitStatements(sql: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+function parseArgs(argv: string[]): { envName: string } {
+  let envName = "dev";
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--env" || a === "-e") {
+      const next = argv[i + 1];
+      if (!next) {
+        console.error("--env requires a value (e.g. --env prod)");
+        process.exit(1);
+      }
+      envName = next;
+      i++;
+    } else if (a.startsWith("--env=")) {
+      envName = a.slice("--env=".length);
+    }
+  }
+  return { envName };
+}
+
 async function main(): Promise<void> {
-  const envPath = resolve(repoRoot, ".dev.vars");
-  let envContents: string;
-  try {
-    envContents = readFileSync(envPath, "utf8");
-  } catch {
-    console.error(`Failed to read ${envPath}`);
-    process.exit(1);
-  }
-  const env = parseEnv(envContents);
-  const url = env.DB_URL;
-  const authToken = env.DB_AUTH_TOKEN;
+  const { envName } = parseArgs(process.argv.slice(2));
+
+  let url = process.env.DB_URL;
+  let authToken = process.env.DB_AUTH_TOKEN;
+  let source = "process.env";
+
   if (!url || !authToken) {
-    console.error("Missing DB_URL or DB_AUTH_TOKEN in .dev.vars");
+    const envFile = `.${envName}.vars`;
+    const envPath = resolve(repoRoot, envFile);
+    let envContents: string;
+    try {
+      envContents = readFileSync(envPath, "utf8");
+    } catch {
+      console.error(
+        `No DB_URL/DB_AUTH_TOKEN in env and failed to read ${envPath}`,
+      );
+      process.exit(1);
+    }
+    const fileEnv = parseEnv(envContents);
+    url = url || fileEnv.DB_URL;
+    authToken = authToken || fileEnv.DB_AUTH_TOKEN;
+    source = envFile;
+  }
+
+  if (!url || !authToken) {
+    console.error(`Missing DB_URL or DB_AUTH_TOKEN (source: ${source})`);
     process.exit(1);
   }
+
+  const host = (() => {
+    try {
+      return new URL(url).host;
+    } catch {
+      return url;
+    }
+  })();
+  console.log(`migrating ${host} (source: ${source})`);
 
   const schemaPath = resolve(repoRoot, "src/db/schema.sql");
   const schema = readFileSync(schemaPath, "utf8");
