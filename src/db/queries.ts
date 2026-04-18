@@ -14,8 +14,6 @@ export type ParticipantRow = {
   id: string;
   event_id: string;
   name: string;
-  pw_hash: string | null;
-  pw_salt: string | null;
   cells: number[];
   created_at: number;
   updated_at: number;
@@ -49,8 +47,6 @@ function mapParticipant(row: Row): ParticipantRow {
     id: String(row.id),
     event_id: String(row.event_id),
     name: String(row.name),
-    pw_hash: row.pw_hash == null ? null : String(row.pw_hash),
-    pw_salt: row.pw_salt == null ? null : String(row.pw_salt),
     cells: parseJsonArray<number>(row.cells_json),
     created_at: Number(row.created_at),
     updated_at: Number(row.updated_at),
@@ -59,7 +55,7 @@ function mapParticipant(row: Row): ParticipantRow {
 
 const EVENT_COLS = "id, admin_token, title, slots_json, created_at, updated_at";
 const PARTICIPANT_COLS =
-  "id, event_id, name, pw_hash, pw_salt, cells_json, created_at, updated_at";
+  "id, event_id, name, cells_json, created_at, updated_at";
 
 export async function createEvent(
   db: DB,
@@ -130,42 +126,22 @@ export async function getParticipantById(
 
 export async function createParticipant(
   db: DB,
-  input: {
-    eventId: string;
-    name: string;
-    pwHash: string | null;
-    pwSalt: string | null;
-  },
+  input: { eventId: string; name: string },
 ): Promise<ParticipantRow> {
   const id = participantId();
   const now = Date.now();
   await db.execute({
-    sql: `INSERT INTO participants (id, event_id, name, pw_hash, pw_salt, cells_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, '[]', ?, ?)`,
-    args: [id, input.eventId, input.name, input.pwHash, input.pwSalt, now, now],
+    sql: `INSERT INTO participants (id, event_id, name, cells_json, created_at, updated_at) VALUES (?, ?, ?, '[]', ?, ?)`,
+    args: [id, input.eventId, input.name, now, now],
   });
   return {
     id,
     event_id: input.eventId,
     name: input.name,
-    pw_hash: input.pwHash,
-    pw_salt: input.pwSalt,
     cells: [],
     created_at: now,
     updated_at: now,
   };
-}
-
-export async function setParticipantPassword(
-  db: DB,
-  id: string,
-  pwHash: string,
-  pwSalt: string,
-): Promise<void> {
-  const now = Date.now();
-  await db.execute({
-    sql: `UPDATE participants SET pw_hash = ?, pw_salt = ?, updated_at = ? WHERE id = ?`,
-    args: [pwHash, pwSalt, now, id],
-  });
 }
 
 export async function saveCells(

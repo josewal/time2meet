@@ -240,6 +240,8 @@ body:has(.event-page) { max-width: 1120px; }
 .identify input { flex: 1 1 120px; }
 .identify button { flex-shrink: 0; }
 .me { font-size: 0.9rem; color: var(--muted); margin: 0 0 12px; }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.linkish:hover { color: inherit; }
 .hint { font-size: 0.85rem; padding: 10px 12px; background: #f0f0f0; border-radius: 3px; }
 
 /* Grid (shared by personal + heatmap) */

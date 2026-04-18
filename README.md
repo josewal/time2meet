@@ -1,6 +1,6 @@
 # when2meet-better
 
-A minimal, open-source when2meet clone running on Cloudflare Workers + Turso. No login required, URL-as-identity. Optional per-name password (like when2meet). Dynamically-rendered OG image so Slack unfurls the live availability heatmap.
+A minimal, open-source when2meet clone running on Cloudflare Workers + Turso. No login required, URL-as-identity. Dynamically-rendered OG image so Slack unfurls the live availability heatmap.
 
 ## Stack
 
@@ -13,7 +13,6 @@ A minimal, open-source when2meet clone running on Cloudflare Workers + Turso. No
 ## Features
 
 - URL-based events, no login
-- Optional per-name passwords (like when2meet)
 - Drag-to-select availability grid (mouse + touch)
 - Live heatmap results
 - Slack URL unfurl with dynamic OG image — zero Slack app install
@@ -129,7 +128,7 @@ src/
   db/             # schema + client + queries
   routes/         # pages, identify, cells, results, admin, og
   views/          # HTML template functions
-  lib/            # password, cookies, ids, slots, heatmap
+  lib/            # cookies, ids, slots, heatmap
   fonts/          # embedded font for OG image
 public/           # static assets served by Worker
   grid.js         # drag-select
@@ -143,9 +142,9 @@ scripts/
 
 The event page injects OG meta tags including an `og:image` URL with a `?v=<updated_at>` cache-buster. Slack fetches that image; the Worker renders a PNG of the current heatmap on demand and caches it in the Workers Cache keyed by `updated_at`. Votes bump `updated_at`, which yields a new image URL, so Slack re-unfurls a fresh heatmap.
 
-## Password model
+## Identity model
 
-Mirrors when2meet exactly: name is required, password is optional. First person to claim a name can set (or skip) a password. If no password is set, the name is "open" — anyone can edit it (matching when2meet's behavior). With a password, only the password holder can edit. No recovery — the event creator holds an admin token (cookie) and can wipe a participant row so the user re-claims.
+Names are open: anyone who enters the same name edits the same row. No passwords, no logout — identity is just the name the user typed. The event creator holds an admin token (cookie) and can delete a participant row if needed.
 
 ## Known v1 limitations
 

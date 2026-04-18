@@ -24,11 +24,10 @@ export function event(
   const eventJson = JSON.stringify(clientData);
 
   const leftBlock = me
-    ? `<p class="me">editing as <strong>${escape(me.name)}</strong></p>
+    ? `<p class="me">editing as <strong>${escape(me.name)}</strong> · <button type="button" class="linkish" hx-post="/event/${escape(ev.id)}/logout">switch name</button></p>
 <div id="grid-area">${gridMarkup(clientData)}<script>window.__INITIAL_CELLS__ = ${JSON.stringify(me.cells)};</script><script src="/grid.js" defer></script></div>`
     : `<form class="identify" hx-post="/event/${escape(ev.id)}/identify" hx-swap="outerHTML" hx-target="#grid-area">
 <input name="name" required maxlength="60" placeholder="Your name" autocomplete="name">
-<input name="password" type="password" maxlength="200" placeholder="Password (optional)" autocomplete="new-password">
 <button type="submit">Enter</button>
 </form>
 <div id="grid-area" class="muted hint">Enter your name to mark your availability. The grid on the right shows when everyone is free.</div>`;
@@ -51,7 +50,7 @@ export function event(
 <script>window.__EVENT__ = ${eventJson};</script>
 
 <section class="panel left">
-<h2 class="panel-title">${me ? "Your availability" : "Sign in"}</h2>
+<h2 class="panel-title">${me ? "Your availability" : "Your name"}</h2>
 ${leftBlock}
 <div id="identify-error"></div>
 </section>

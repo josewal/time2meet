@@ -11,8 +11,6 @@ CREATE TABLE IF NOT EXISTS participants (
   id          TEXT PRIMARY KEY,
   event_id    TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
-  pw_hash     TEXT,
-  pw_salt     TEXT,
   cells_json  TEXT NOT NULL DEFAULT '[]',
   created_at  INTEGER NOT NULL,
   updated_at  INTEGER NOT NULL,
