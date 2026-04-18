@@ -1,20 +1,27 @@
 import { Hono } from "hono";
 import type { Env } from "./env";
+import { pagesLandingRoute } from "./routes/pages-landing";
+import { eventsRoute } from "./routes/events";
+import { resultsRoute } from "./routes/results";
+import { adminRoute } from "./routes/admin";
+import { pagesEventRoute } from "./routes/pages-event";
+import { identifyRoute } from "./routes/identify";
+import { cellsRoute } from "./routes/cells";
+import { ogRoute } from "./routes/og";
 
 const app = new Hono<{ Bindings: Env }>();
 
 const stub = (name: string) => (c: any) =>
   c.text(`501 not implemented: ${name}`, 501);
 
-app.get("/", stub("GET /"));
-app.post("/events", stub("POST /events"));
-app.get("/event/:id", stub("GET /event/:id"));
-app.post("/event/:id/identify", stub("POST /event/:id/identify"));
-app.get("/event/:id/results", stub("GET /event/:id/results"));
-app.delete("/event/:id/participant/:pid", stub("DELETE participant"));
-app.get("/api/event/:id", stub("GET /api/event/:id"));
-app.put("/api/event/:id/cells", stub("PUT /api/event/:id/cells"));
-app.get("/event/:id/og.png", stub("GET /event/:id/og.png"));
+app.route("/", pagesLandingRoute);
+app.route("/", eventsRoute);
+app.route("/", resultsRoute);
+app.route("/", adminRoute);
+app.route("/", pagesEventRoute);
+app.route("/", identifyRoute);
+app.route("/", cellsRoute);
+app.route("/", ogRoute);
 
 app.onError((err, c) => {
   console.error(err);
