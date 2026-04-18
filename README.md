@@ -63,6 +63,23 @@ npm run dev
 
 Open http://localhost:8787
 
+## Working in a git worktree
+
+`.dev.vars` is gitignored and lives only at the main checkout. When creating a new worktree (e.g. under `.claude/worktrees/`), copy it over before running `npm run dev` or `npm run test:e2e`:
+
+```bash
+cp ../../../.dev.vars .dev.vars   # adjust relative path to the main checkout
+```
+
+If `.dev.vars` points at a local sqld (e.g. `http://127.0.0.1:8080`), make sure sqld is running from the main checkout's `.data/` directory:
+
+```bash
+# from the main checkout, once per machine session
+sqld -d .data --http-listen-addr 127.0.0.1:8080
+```
+
+All worktrees then share that single DB.
+
 ## Deploy
 
 ```bash

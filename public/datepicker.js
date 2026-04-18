@@ -14,7 +14,7 @@
 
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const WEEKS_PER_VIEW = 6;
-  const DOW_EXPANSION_WEEKS = 4;
+  const DOW_SENTINEL_DAYS = ["1970-01-04","1970-01-05","1970-01-06","1970-01-07","1970-01-08","1970-01-09","1970-01-10"];
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -33,24 +33,19 @@
   const selectedDows = new Set();
 
   const computeDowDates = () => {
-    const base = startOfWeek(today);
-    const out = [];
-    for (let w = 0; w < DOW_EXPANSION_WEEKS; w++) {
-      for (const dow of selectedDows) {
-        const d = new Date(base);
-        d.setDate(base.getDate() + w * 7 + dow);
-        if (d >= today) out.push(ymd(d));
-      }
-    }
-    return out.sort();
+    return [...selectedDows].sort((a, b) => a - b).map((dow) => DOW_SENTINEL_DAYS[dow]);
   };
 
   const sync = () => {
     const dates = mode === "specific" ? [...selectedDates].sort() : computeDowDates();
     hidden.value = dates.join(",");
-    summaryEl.textContent = dates.length === 0
-      ? "no dates selected"
-      : `${dates.length} date${dates.length === 1 ? "" : "s"} selected`;
+    if (dates.length === 0) {
+      summaryEl.textContent = mode === "specific" ? "no dates selected" : "no days selected";
+    } else if (mode === "specific") {
+      summaryEl.textContent = `${dates.length} date${dates.length === 1 ? "" : "s"} selected`;
+    } else {
+      summaryEl.textContent = `${dates.length} day${dates.length === 1 ? "" : "s"} selected`;
+    }
   };
 
   const renderSpecific = () => {

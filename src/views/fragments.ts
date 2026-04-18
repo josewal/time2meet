@@ -55,6 +55,7 @@ function formatDayHeader(dateIso: string): string {
     const [y, m, d] = dateIso.split("-").map(Number);
     const dt = new Date(Date.UTC(y, m - 1, d));
     const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
+    if (y === 1970) return dow;
     return `${dow} ${m}/${d}`;
   } catch {
     return dateIso;
