@@ -24,12 +24,6 @@ jobs:
 
       - run: npm run typecheck
 
-      - name: Migrate prod DB
-        env:
-          DB_URL: ${{ secrets.DB_URL }}
-          DB_AUTH_TOKEN: ${{ secrets.DB_AUTH_TOKEN }}
-        run: npm run migrate
-
       - name: Deploy Worker
         id: deploy
         uses: cloudflare/wrangler-action@v3

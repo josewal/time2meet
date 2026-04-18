@@ -105,14 +105,16 @@ TURSO_DB=my-db npm run migrate:prod
 ### Automated deploys (GitHub Actions)
 
 - `.github/workflows/ci.yml` — on PR: typecheck + e2e (uses a local `turso dev`; no external DB)
-- `.github/workflows/deploy.yml` — on push to `main`: migrate prod DB → deploy Worker → smoke test
+- `.github/workflows/deploy.yml` — on push to `main`: deploy Worker → smoke test
+
+Prod DB migrations are **not** run in CI — run `npm run migrate:prod`
+from your laptop before pushing any schema-changing commit. Keeps the
+Turso token off GitHub's secret store.
 
 Required repo **secrets**:
 
 - `CLOUDFLARE_API_TOKEN` — Cloudflare API token with `Workers Scripts:Edit` + `Account:Read`
 - `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID
-- `DB_URL` — Turso prod libSQL URL
-- `DB_AUTH_TOKEN` — Turso prod auth token
 
 Optional repo **variable**:
 
