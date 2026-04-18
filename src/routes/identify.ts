@@ -5,10 +5,7 @@ import {
   createParticipant,
   getEvent,
   getParticipantByName,
-  setParticipantPassword,
-  type ParticipantRow,
 } from "../db/queries";
-import { hashPassword, verifyPassword } from "../lib/password";
 import { buildSetCookie, signCookie } from "../lib/cookies";
 import {
   deriveDaysAndPerDay,
@@ -25,6 +22,18 @@ function sendIdentifyError(c: Context<{ Bindings: Env }>, msg: string) {
   return c.html(identifyErrorFragment(msg), 200);
 }
 
+identifyRoute.post("/event/:id/logout", async (c) => {
+  const eventId = c.req.param("id");
+  const cleared = buildSetCookie(`p_${eventId}`, "", {
+    path: "/",
+    maxAge: 0,
+    secure: true,
+  });
+  c.header("Set-Cookie", cleared);
+  c.header("HX-Redirect", `/event/${eventId}`);
+  return c.body(null, 204);
+});
+
 identifyRoute.post("/event/:id/identify", async (c) => {
   const eventId = c.req.param("id");
   const form = await c.req.parseBody();
@@ -33,54 +42,13 @@ identifyRoute.post("/event/:id/identify", async (c) => {
   if (name.length < 1 || name.length > 60) {
     return sendIdentifyError(c, "Name must be 1..60 characters.");
   }
-  const password =
-    typeof form.password === "string" && form.password.length > 0
-      ? form.password
-      : null;
-  if (password && password.length > 200) {
-    return sendIdentifyError(c, "Password too long.");
-  }
 
   const db = createDB(c.env);
   const ev = await getEvent(db, eventId);
   if (!ev) return c.text("not found", 404);
 
   const existing = await getParticipantByName(db, eventId, name);
-
-  let me: ParticipantRow;
-  if (!existing) {
-    let pwHash: string | null = null;
-    let pwSalt: string | null = null;
-    if (password) {
-      const { salt, hash } = await hashPassword(password);
-      pwSalt = salt;
-      pwHash = hash;
-    }
-    me = await createParticipant(db, { eventId, name, pwHash, pwSalt });
-  } else if (!existing.pw_hash || !existing.pw_salt) {
-    if (password) {
-      const { salt, hash } = await hashPassword(password);
-      await setParticipantPassword(db, existing.id, hash, salt);
-      me = { ...existing, pw_hash: hash, pw_salt: salt };
-    } else {
-      me = existing;
-    }
-  } else {
-    if (!password) {
-      return sendIdentifyError(
-        c,
-        "This name has a password set. Enter the correct one, or choose a different name.",
-      );
-    }
-    const ok = await verifyPassword(password, existing.pw_salt, existing.pw_hash);
-    if (!ok) {
-      return sendIdentifyError(
-        c,
-        "This name has a password set. Enter the correct one, or choose a different name.",
-      );
-    }
-    me = existing;
-  }
+  const me = existing ?? (await createParticipant(db, { eventId, name }));
 
   const signed = await signCookie(me.id, c.env.COOKIE_SECRET);
   const setCookie = buildSetCookie(`p_${eventId}`, signed, {

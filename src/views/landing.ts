@@ -65,7 +65,7 @@ export function landing(): string {
   </form>
   <script src="/datepicker.js" defer></script>
   <footer class="landing-footer">
-    <small>URL is the secret. Share the link to invite. Names can be password-protected.</small>
+    <small>URL is the secret. Share the link to invite.</small>
   </footer>
 </main>`;
 }
