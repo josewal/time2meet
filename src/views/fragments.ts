@@ -50,23 +50,27 @@ export function deriveDaysAndPerDay(slots: string[]): {
   return { days, slotsPerDay };
 }
 
-function formatDayHeader(dateIso: string): string {
+function formatDayHeader(dateIso: string): { dow: string; date: string } {
   try {
     const [y, m, d] = dateIso.split("-").map(Number);
     const dt = new Date(Date.UTC(y, m - 1, d));
     const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
-    if (y === 1970) return dow;
-    return `${dow} ${m}/${d}`;
+    if (y === 1970) return { dow, date: "" };
+    return { dow, date: `${m}/${d}` };
   } catch {
-    return dateIso;
+    return { dow: dateIso, date: "" };
   }
 }
 
 function gridHeaderRow(days: string[]): string {
   const parts: string[] = ['<div class="grid-corner"></div>'];
   for (const day of days) {
+    const { dow, date } = formatDayHeader(day);
+    const dateLine = date
+      ? `<span class="grid-day-date">${escape(date)}</span>`
+      : "";
     parts.push(
-      `<div class="grid-day-header">${escape(formatDayHeader(day))}</div>`,
+      `<div class="grid-day-header"><span class="grid-day-dow">${escape(dow)}</span>${dateLine}</div>`,
     );
   }
   return parts.join("");

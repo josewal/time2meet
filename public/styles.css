@@ -268,8 +268,15 @@ body:has(.event-page) { max-width: 1120px; }
   color: var(--muted);
   text-align: center;
   padding: 4px 2px;
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  line-height: 1.15;
+  min-width: 0;
 }
+.grid-day-dow, .grid-day-date { display: block; }
+.grid-day-date { font-weight: 500; font-variant-numeric: tabular-nums; }
 .grid-time-label {
   font-size: 0.7rem;
   color: var(--muted);
