@@ -42,31 +42,58 @@ ogRoute.get("/event/:id/og.png", async (c) => {
   const slotsPerDay = days.length === 0 ? 0 : Math.round(ev.slots.length / days.length);
   const maxCount = counts.reduce((m, x) => (x > m ? x : m), 0) || 1;
 
-  // Build the heatmap column HTML.
-  // Each column is a flex column of rectangles (one per slot-of-day). Rect height is even.
-  const COL_MAX_WIDTH = 56;
-  const SINGLE_DAY_COL_WIDTH = 160;
+  // First and last slot times, for left-axis labels.
+  const firstSlotTime = ev.slots.length > 0 ? ev.slots[0].slice(11) : "";
+  const lastSlotTime =
+    ev.slots.length > 0 ? ev.slots[slotsPerDay - 1].slice(11) : "";
+  // Optional mid-point time, derived from slotsPerDay and the first two slots.
+  let midSlotTime = "";
+  if (slotsPerDay >= 3 && ev.slots.length >= 2) {
+    const startMin = hhmmToMin(ev.slots[0].slice(11));
+    const step = hhmmToMin(ev.slots[1].slice(11)) - startMin;
+    const midIdx = Math.floor(slotsPerDay / 2);
+    midSlotTime = minToHHMM(startMin + midIdx * step);
+  }
+
+  // ----- Layout constants -----
+  // Sizing is tight: 630px image - 24 outer margin x2 - 48 card padding x2 ≈ 438px
+  // of vertical room for title + pill + heatmap + footer. Every number below is
+  // picked so the full stack fits without overflow at 3+ days / 16 slots-per-day.
   const IMG_W = 1200;
   const IMG_H = 630;
-  const HEATMAP_H = 320;
-  const PAD = 48;
-  const HEATMAP_TOP = 32;
+  const OUTER_MARGIN = 24;
+  const CARD_PAD = 48;
+  const CARD_W = IMG_W - OUTER_MARGIN * 2; // 1152
+  const CARD_H = IMG_H - OUTER_MARGIN * 2; // 582
+  const CONTENT_W = CARD_W - CARD_PAD * 2; // 1056
+
+  // Heatmap geometry — used for the 1+ response states.
+  // COL_MAX_WIDTH is generous so 2-3 day heatmaps don't look stranded in the
+  // card; the `Math.min` against available-width-per-day clamps us back down
+  // for dense 7-day ranges (7 * 48 + gaps fits in the ~990px column gutter).
+  const COL_MAX_WIDTH = 200;
+  const SINGLE_DAY_COL_WIDTH = 280;
+  const DOW_LABEL_H = 24; // row of M T W ... above columns
+  const TIME_AXIS_W = 64; // left column with 09:00 / 17:00 labels
   const RECT_GAP = 2;
-  // Subtract the inter-rect gap so slotsPerDay × (rectH + gap) fits HEATMAP_H.
+  // Height reserved for the column rects themselves.
+  const HEATMAP_H = parts.length === 1 ? 240 : 300;
   const rectH =
     slotsPerDay === 0
       ? 0
       : Math.max(1, Math.floor(HEATMAP_H / slotsPerDay) - RECT_GAP);
-  const availableWidth = IMG_W - 120;
+  // Width available for the columns themselves (card content minus the time axis gutter).
+  const heatmapInnerW = CONTENT_W - TIME_AXIS_W;
   const colW =
     days.length === 0
       ? 0
       : days.length === 1
         ? SINGLE_DAY_COL_WIDTH
-        : Math.min(COL_MAX_WIDTH, Math.floor(availableWidth / days.length));
+        : Math.min(COL_MAX_WIDTH, Math.floor((heatmapInnerW - 4 * (days.length - 1)) / days.length));
 
+  // ----- Columns (rect grid) HTML -----
   const columnsHtml = days
-    .map((_, dayIdx) => {
+    .map((d, dayIdx) => {
       const rects: string[] = [];
       for (let r = 0; r < slotsPerDay; r++) {
         const slotIndex = dayIdx * slotsPerDay + r;
@@ -78,27 +105,98 @@ ogRoute.get("/event/:id/og.png", async (c) => {
           `<div style="width:${colW}px; height:${rectH}px; background:${bg}; margin-bottom:${RECT_GAP}px; display:flex; flex-shrink:0;"></div>`,
         );
       }
-      return `<div style="display:flex; flex-direction:column; margin-right:4px; align-items:stretch; flex-shrink:0;">${rects.join("")}</div>`;
+      // Day-of-week letter above each column.
+      const letter = dayOfWeekLetter(d);
+      const col = `<div style="display:flex; flex-direction:column; align-items:center; margin-right:${dayIdx === days.length - 1 ? 0 : 4}px; flex-shrink:0;">
+        <div style="display:flex; height:${DOW_LABEL_H}px; width:${colW}px; align-items:center; justify-content:center; font-size:20px; color:#888; letter-spacing:2px; flex-shrink:0;">${letter}</div>
+        <div style="display:flex; flex-direction:column; align-items:stretch; flex-shrink:0;">${rects.join("")}</div>
+      </div>`;
+      return col;
     })
     .join("");
 
-  const titleEscaped = escapeHtml(ev.title).slice(0, 60);
-  const dateRange =
+  // ----- Left time-axis HTML -----
+  // Top label sits aligned with the first rect; bottom aligned with the last rect.
+  // We use a fixed-height container matching DOW_LABEL_H + HEATMAP_H so absolute
+  // alignment by flex space-between works. Satori supports flex ok; use justify-content.
+  const timeAxisH = DOW_LABEL_H + HEATMAP_H;
+  const timeAxisHtml = `
+    <div style="display:flex; flex-direction:column; width:${TIME_AXIS_W}px; height:${timeAxisH}px; padding-top:${DOW_LABEL_H}px; padding-right:12px; justify-content:space-between; align-items:flex-end; flex-shrink:0; font-size:20px; color:#888;">
+      <div style="display:flex;">${escapeHtml(firstSlotTime)}</div>
+      ${midSlotTime ? `<div style="display:flex;">${escapeHtml(midSlotTime)}</div>` : ""}
+      <div style="display:flex;">${escapeHtml(lastSlotTime)}</div>
+    </div>
+  `;
+
+  const heatmapBlock = `
+    <div style="display:flex; flex-direction:row; align-items:flex-start; justify-content:center; flex-shrink:0; width:100%;">
+      ${timeAxisHtml}
+      <div style="display:flex; flex-direction:row; align-items:flex-start; flex-shrink:0;">${columnsHtml}</div>
+    </div>
+  `;
+
+  // ----- Text pieces -----
+  const titleEscaped = clipTitle(escapeHtml(ev.title), 50);
+  const dateRangeText =
     days.length === 0
       ? ""
       : days.length === 1
         ? formatDay(days[0])
         : `${formatDay(days[0])} – ${formatDay(days[days.length - 1])}`;
-  const subtitleEscaped = `${escapeHtml(dateRange)}  ·  ${parts.length} ${
-    parts.length === 1 ? "response" : "responses"
-  }`;
+  const datePill = dateRangeText
+    ? `<div style="display:flex; padding:8px 16px; background:#eef2ff; color:#4338ca; font-size:22px; border-radius:999px; flex-shrink:0;">${escapeHtml(dateRangeText)}</div>`
+    : "";
 
+  // Metadata caption rendered next to the date pill — keeps the header unified
+  // instead of orphaning the response count at the bottom of the card.
+  let metaCaption = "";
+  if (parts.length === 1) {
+    const firstName = escapeHtml(parts[0].name || "Someone");
+    metaCaption = `${firstName} · 1 response`;
+  } else if (parts.length >= 2) {
+    metaCaption = `${parts.length} responses`;
+  }
+  const metaRow =
+    datePill || metaCaption
+      ? `<div style="display:flex; flex-direction:row; align-items:center; margin-top:16px; flex-shrink:0;">
+          ${datePill}
+          ${
+            metaCaption
+              ? `<div style="display:flex; margin-left:14px; font-size:22px; color:#64748b;">${escapeHtml(metaCaption)}</div>`
+              : ""
+          }
+        </div>`
+      : "";
+
+  // ----- State-specific middle block -----
+  let middleBlock = "";
+  if (parts.length === 0) {
+    // Empty state: big invitation as the hero.
+    middleBlock = `
+      <div style="display:flex; flex-direction:column; flex-grow:1; align-items:flex-start; justify-content:center;">
+        <div style="display:flex; font-size:48px; line-height:1.15; color:#0f172a; letter-spacing:-0.5px;">Be the first to pick times</div>
+        <div style="display:flex; margin-top:14px; font-size:24px; color:#64748b;">Open to add your availability.</div>
+      </div>
+    `;
+  } else {
+    // 1+ response: heatmap fills the middle; metadata already lives in the header row.
+    middleBlock = `
+      <div style="display:flex; flex-direction:column; flex-grow:1; justify-content:center;">
+        ${heatmapBlock}
+      </div>
+    `;
+  }
+
+  // ----- Outer shell + card -----
   const html = `
-    <div style="width:${IMG_W}px; height:${IMG_H}px; display:flex; flex-direction:column; padding:${PAD}px; background:#fafafa; font-family:Inter;">
-      <div style="display:flex; font-size:56px; line-height:1.2; color:#1a1a1a; font-weight:400; flex-shrink:0;">${titleEscaped}</div>
-      <div style="display:flex; font-size:28px; line-height:1.3; color:#666; margin-top:12px; flex-shrink:0;">${subtitleEscaped}</div>
-      <div style="display:flex; flex-direction:row; margin-top:${HEATMAP_TOP}px; height:${HEATMAP_H}px; align-items:flex-start; flex-shrink:0; overflow:hidden;">${columnsHtml}</div>
-      <div style="display:flex; margin-top:auto; font-size:22px; color:#999; flex-shrink:0;">time2meet</div>
+    <div style="width:${IMG_W}px; height:${IMG_H}px; display:flex; padding:${OUTER_MARGIN}px; background:linear-gradient(135deg, #fafbff 0%, #f1f5f9 100%); font-family:Inter;">
+      <div style="width:${CARD_W}px; height:${CARD_H}px; display:flex; flex-direction:column; padding:${CARD_PAD}px; background:#ffffff; border-radius:24px; box-shadow:0 8px 32px rgba(15, 23, 42, 0.08);">
+        <div style="display:flex; flex-direction:column; flex-shrink:0;">
+          <div style="display:flex; font-size:60px; line-height:1.1; color:#0f172a; letter-spacing:-1px; flex-shrink:0;">${titleEscaped}</div>
+          ${metaRow}
+        </div>
+        ${middleBlock}
+      </div>
     </div>
   `;
 
@@ -131,6 +229,15 @@ function escapeHtml(s: string): string {
   });
 }
 
+function clipTitle(s: string, max: number): string {
+  // Assumes `s` is already HTML-escaped; we only count/slice code units, which
+  // is fine since we don't cut inside an entity (the entity shapes are short
+  // and the 50-char cap is plenty past any realistic entity boundary for the
+  // titles we see).
+  if (s.length <= max) return s;
+  return s.slice(0, max - 1).trimEnd() + "…";
+}
+
 function formatDay(ymd: string): string {
   // "2026-04-20" -> "Apr 20"
   const months = [
@@ -151,4 +258,27 @@ function formatDay(ymd: string): string {
   const d = parseInt(ymd.slice(8, 10), 10);
   if (isNaN(m) || isNaN(d)) return ymd;
   return `${months[m - 1]} ${d}`;
+}
+
+function dayOfWeekLetter(ymd: string): string {
+  // 0=Sun..6=Sat. Sun=S is ambiguous with Sat=S, accepted per design spec —
+  // column position plus the date-range pill disambiguates.
+  const letters = ["S", "M", "T", "W", "T", "F", "S"];
+  const dow = new Date(ymd + "T00:00:00Z").getUTCDay();
+  if (isNaN(dow)) return "";
+  return letters[dow] ?? "";
+}
+
+function hhmmToMin(s: string): number {
+  const hh = parseInt(s.slice(0, 2), 10);
+  const mm = parseInt(s.slice(3, 5), 10);
+  if (isNaN(hh) || isNaN(mm)) return 0;
+  return hh * 60 + mm;
+}
+
+function minToHHMM(m: number): string {
+  const clamped = ((m % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hh = Math.floor(clamped / 60);
+  const mm = clamped % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
