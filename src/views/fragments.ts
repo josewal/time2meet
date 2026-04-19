@@ -157,7 +157,7 @@ export function identifyFormBody(eventId: string): string {
 <input type="text" name="name" required maxlength="60" placeholder="Your name" autocomplete="name">
 <button type="submit">Enter</button>
 </form>
-<div id="grid-area" class="muted hint">Enter your name to mark your availability. The grid on the right shows when everyone is free.</div>
+<div id="grid-area" class="muted hint">Type your name to mark your availability. Use the same name later to pick up where you left off — one name per person.</div>
 <div id="identify-error"></div>`;
 }
 
