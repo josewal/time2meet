@@ -4,7 +4,6 @@
   const grid = document.getElementById("grid");
   if (!grid || !EVENT) return;
 
-  const cols = parseInt(grid.dataset.cols, 10);
   const rows = parseInt(grid.dataset.rows, 10);
   const cells = Array.from(grid.querySelectorAll(".cell"));
   const cellBySlot = new Map(cells.map(c => [parseInt(c.dataset.slot, 10), c]));
@@ -20,28 +19,6 @@
     const v = parseInt(el.dataset.slot, 10);
     return Number.isFinite(v) ? v : -1;
   };
-
-  // Crosshair hover: highlight just the day header and time label
-  const headers = Array.from(grid.querySelectorAll(".grid-day-header"));
-  const timeLabels = Array.from(grid.querySelectorAll(".grid-time-label"));
-
-  let hoverCol = -1;
-  let hoverRow = -1;
-  const setHover = (col, row) => {
-    if (col === hoverCol && row === hoverRow) return;
-    if (hoverCol >= 0) headers[hoverCol]?.classList.remove("axis-hover");
-    if (hoverRow >= 0) timeLabels[hoverRow]?.classList.remove("axis-hover");
-    hoverCol = col;
-    hoverRow = row;
-    if (col >= 0) headers[col]?.classList.add("axis-hover");
-    if (row >= 0) timeLabels[row]?.classList.add("axis-hover");
-  };
-  grid.addEventListener("mouseover", (e) => {
-    const s = slotOf(e.target);
-    if (s < 0) { setHover(-1, -1); return; }
-    setHover(colOf(s), rowOf(s));
-  });
-  grid.addEventListener("mouseleave", () => setHover(-1, -1));
 
   const readOnly = !EVENT.me;
   if (readOnly) {

@@ -117,7 +117,7 @@ export function heatmapMarkup(
   const cols = data.days.length;
   const parts: string[] = [];
   parts.push(
-    `<div class="grid heatmap" style="--cols:${cols};">`,
+    `<div class="grid heatmap" data-cols="${cols}" data-rows="${rows}" style="--cols:${cols};">`,
   );
   parts.push(gridHeaderRow(data.days));
   const denom = maxCount > 0 ? maxCount : 1;

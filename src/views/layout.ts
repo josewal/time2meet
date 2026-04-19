@@ -22,6 +22,7 @@ export function layout(meta: LayoutMeta, bodyHtml: string): string {
     '<link rel="stylesheet" href="/styles.css">',
     '<link rel="icon" href="/favicon.svg">',
     '<script src="/htmx.min.js" defer></script>',
+    '<script src="/crosshair.js" defer></script>',
   ];
 
   if (meta.description) {
