@@ -35,8 +35,10 @@ export function event(
 
   return `<main class="event-page">
 <header class="event-header">
+<div class="event-header__title">
 <h1>${escape(ev.title)}</h1>
 ${captionHtml}
+</div>
 <div class="share-row">
 <input class="share-url" type="text" readonly value="${escape(shareUrl)}" onclick="this.select()">
 <button type="button" class="copy-btn" data-copy="${escape(shareUrl)}">Copy</button>
