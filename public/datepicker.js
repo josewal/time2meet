@@ -142,14 +142,50 @@
   }, { passive: false });
   specGrid.addEventListener("touchend", () => { if (dragMode) { dragMode = null; sync(); } });
 
-  dowGrid.addEventListener("click", (e) => {
-    const col = e.target.closest(".dp-dow-col");
-    if (!col) return;
+  let dowDragMode = null;
+  let dowTouched = new Set();
+  const applyDow = (col) => {
+    if (!col || !col.classList.contains("dp-dow-col")) return;
     const n = parseInt(col.dataset.dow, 10);
-    if (selectedDows.has(n)) { selectedDows.delete(n); col.classList.remove("selected"); }
-    else { selectedDows.add(n); col.classList.add("selected"); }
-    sync();
+    if (dowTouched.has(n)) return;
+    dowTouched.add(n);
+    if (dowDragMode === "add") { selectedDows.add(n); col.classList.add("selected"); }
+    else { selectedDows.delete(n); col.classList.remove("selected"); }
+  };
+
+  dowGrid.addEventListener("mousedown", (e) => {
+    const c = e.target.closest(".dp-dow-col");
+    if (!c) return;
+    e.preventDefault();
+    const n = parseInt(c.dataset.dow, 10);
+    dowDragMode = selectedDows.has(n) ? "remove" : "add";
+    dowTouched = new Set();
+    applyDow(c); sync();
   });
+  dowGrid.addEventListener("mousemove", (e) => {
+    if (!dowDragMode) return;
+    applyDow(e.target.closest(".dp-dow-col")); sync();
+  });
+  window.addEventListener("mouseup", () => { if (dowDragMode) { dowDragMode = null; sync(); } });
+
+  dowGrid.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    const c = document.elementFromPoint(t.clientX, t.clientY)?.closest(".dp-dow-col");
+    if (!c) return;
+    e.preventDefault();
+    const n = parseInt(c.dataset.dow, 10);
+    dowDragMode = selectedDows.has(n) ? "remove" : "add";
+    dowTouched = new Set();
+    applyDow(c); sync();
+  }, { passive: false });
+  dowGrid.addEventListener("touchmove", (e) => {
+    if (!dowDragMode) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    applyDow(document.elementFromPoint(t.clientX, t.clientY)?.closest(".dp-dow-col"));
+    sync();
+  }, { passive: false });
+  dowGrid.addEventListener("touchend", () => { if (dowDragMode) { dowDragMode = null; sync(); } });
 
   modeSel.addEventListener("change", () => {
     mode = modeSel.value;
