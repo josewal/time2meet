@@ -150,7 +150,7 @@ export function gridReady(
 export function identifyFormBody(eventId: string): string {
   return `<h2 class="panel-title">Your name</h2>
 <form class="identify" hx-post="/event/${escape(eventId)}/identify" hx-swap="innerHTML" hx-target="#left-panel">
-<input name="name" required maxlength="60" placeholder="Your name" autocomplete="name">
+<input type="text" name="name" required maxlength="60" placeholder="Your name" autocomplete="name">
 <button type="submit">Enter</button>
 </form>
 <div id="grid-area" class="muted hint">Enter your name to mark your availability. The grid on the right shows when everyone is free.</div>
