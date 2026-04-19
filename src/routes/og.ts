@@ -45,13 +45,25 @@ ogRoute.get("/event/:id/og.png", async (c) => {
   // Build the heatmap column HTML.
   // Each column is a flex column of rectangles (one per slot-of-day). Rect height is even.
   const COL_MAX_WIDTH = 56;
+  const SINGLE_DAY_COL_WIDTH = 160;
   const IMG_W = 1200;
   const IMG_H = 630;
-  const HEATMAP_H = 380;
-  const rectH = slotsPerDay === 0 ? 0 : Math.max(2, Math.floor(HEATMAP_H / slotsPerDay));
+  const HEATMAP_H = 320;
+  const PAD = 48;
+  const HEATMAP_TOP = 32;
+  const RECT_GAP = 2;
+  // Subtract the inter-rect gap so slotsPerDay × (rectH + gap) fits HEATMAP_H.
+  const rectH =
+    slotsPerDay === 0
+      ? 0
+      : Math.max(1, Math.floor(HEATMAP_H / slotsPerDay) - RECT_GAP);
   const availableWidth = IMG_W - 120;
   const colW =
-    days.length === 0 ? 0 : Math.min(COL_MAX_WIDTH, Math.floor(availableWidth / days.length));
+    days.length === 0
+      ? 0
+      : days.length === 1
+        ? SINGLE_DAY_COL_WIDTH
+        : Math.min(COL_MAX_WIDTH, Math.floor(availableWidth / days.length));
 
   const columnsHtml = days
     .map((_, dayIdx) => {
@@ -63,10 +75,10 @@ ogRoute.get("/event/:id/og.png", async (c) => {
         const bg =
           c0 === 0 ? "#ececec" : `rgba(16, 185, 129, ${0.15 + intensity * 0.85})`;
         rects.push(
-          `<div style="width:${colW}px; height:${rectH}px; background:${bg}; margin-bottom:2px; display:flex;"></div>`,
+          `<div style="width:${colW}px; height:${rectH}px; background:${bg}; margin-bottom:${RECT_GAP}px; display:flex; flex-shrink:0;"></div>`,
         );
       }
-      return `<div style="display:flex; flex-direction:column; margin-right:4px; align-items:stretch;">${rects.join("")}</div>`;
+      return `<div style="display:flex; flex-direction:column; margin-right:4px; align-items:stretch; flex-shrink:0;">${rects.join("")}</div>`;
     })
     .join("");
 
@@ -82,11 +94,11 @@ ogRoute.get("/event/:id/og.png", async (c) => {
   }`;
 
   const html = `
-    <div style="width:${IMG_W}px; height:${IMG_H}px; display:flex; flex-direction:column; padding:60px; background:#fafafa; font-family:Inter;">
-      <div style="display:flex; font-size:56px; color:#1a1a1a; font-weight:400;">${titleEscaped}</div>
-      <div style="display:flex; font-size:28px; color:#666; margin-top:12px;">${subtitleEscaped}</div>
-      <div style="display:flex; flex-direction:row; margin-top:48px; align-items:flex-start;">${columnsHtml}</div>
-      <div style="display:flex; margin-top:auto; font-size:22px; color:#999;">time2meet</div>
+    <div style="width:${IMG_W}px; height:${IMG_H}px; display:flex; flex-direction:column; padding:${PAD}px; background:#fafafa; font-family:Inter;">
+      <div style="display:flex; font-size:56px; line-height:1.2; color:#1a1a1a; font-weight:400; flex-shrink:0;">${titleEscaped}</div>
+      <div style="display:flex; font-size:28px; line-height:1.3; color:#666; margin-top:12px; flex-shrink:0;">${subtitleEscaped}</div>
+      <div style="display:flex; flex-direction:row; margin-top:${HEATMAP_TOP}px; height:${HEATMAP_H}px; align-items:flex-start; flex-shrink:0; overflow:hidden;">${columnsHtml}</div>
+      <div style="display:flex; margin-top:auto; font-size:22px; color:#999; flex-shrink:0;">time2meet</div>
     </div>
   `;
 

@@ -9,7 +9,7 @@ import {
 import { buildSetCookie, signCookie } from "../lib/cookies";
 import {
   deriveDaysAndPerDay,
-  gridReady,
+  editingAsBody,
   identifyErrorFragment,
   type EventClientData,
 } from "../views/fragments";
@@ -67,5 +67,5 @@ identifyRoute.post("/event/:id/identify", async (c) => {
     me: { id: me.id, name: me.name },
   };
   c.header("Content-Type", "text/html; charset=utf-8");
-  return c.body(gridReady(clientData, me.cells));
+  return c.body(editingAsBody(clientData, me.name, me.cells));
 });
