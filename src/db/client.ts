@@ -1,4 +1,4 @@
-import { createClient, type Client } from "@libsql/client/web";
+import { createClient, type Client } from "@libsql/client";
 import type { Env } from "../env";
 
 export type DB = Client;

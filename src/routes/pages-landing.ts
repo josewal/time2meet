@@ -8,7 +8,7 @@ export const pagesLandingRoute = new Hono<{ Bindings: Env }>();
 pagesLandingRoute.get("/", (c) => {
   const html = layout(
     {
-      title: "when2meet-better",
+      title: "time2meet",
       description: "Minimal shared availability, no login required.",
     },
     landing(),

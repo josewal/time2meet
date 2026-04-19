@@ -10,6 +10,10 @@ export default defineConfig({
   reporter: process.env.CI ? "github" : "list",
   timeout: 30_000,
   expect: { timeout: 5_000 },
+  // OG snapshots render server-side in workerd, so the test runner's project
+  // and platform don't change the bytes — drop the suffix so all dev OSes
+  // share one baseline.
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFileName}/{arg}{ext}",
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
@@ -19,7 +23,7 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    command: `npx wrangler dev --port ${PORT} --ip 127.0.0.1`,
+    command: `bash scripts/dev.sh --port ${PORT} --ip 127.0.0.1`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

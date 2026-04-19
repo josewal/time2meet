@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# End-to-end check against a deployed URL:
+#   1. GET / returns 200 and looks like our landing page
+#   2. POST /events succeeds and returns an HX-Redirect to /event/<id>
+#   3. GET <redirect> returns 200
+#
+# Usage:
+#   APP_URL=https://time2meet.<subdomain>.workers.dev bash scripts/smoke.sh
+
 URL="${APP_URL:-${DEPLOY_URL:-}}"
 if [ -z "$URL" ]; then
   echo "no APP_URL or DEPLOY_URL set" >&2
@@ -13,7 +21,7 @@ echo "smoke-testing $URL"
 tries=10
 for i in $(seq 1 $tries); do
   status=$(curl -s -o /tmp/smoke.html -w '%{http_code}' "$URL/") || status=000
-  if [ "$status" = "200" ] && grep -q "when2meet-better" /tmp/smoke.html; then
+  if [ "$status" = "200" ] && grep -q 'class="create-event"' /tmp/smoke.html; then
     echo "GET / ok"
     break
   fi

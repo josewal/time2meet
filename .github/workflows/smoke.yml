@@ -1,0 +1,35 @@
+name: Smoke
+
+# Cloudflare Workers Builds deploys outside GitHub Actions, so this
+# workflow waits ~60s for the deploy to land, then verifies the live
+# URL. Also runs hourly so a broken prod gets noticed quickly.
+#
+# Repo variables (Settings → Variables → Actions):
+#   APP_URL — production URL, e.g. https://time2meet.<sub>.workers.dev
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Cloudflare Workers Builds (push only)
+        if: github.event_name == 'push'
+        run: sleep 60
+
+      - name: Smoke test ${{ vars.APP_URL }}
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "vars.APP_URL not set on this repo — skipping" >&2
+            exit 1
+          fi
+          bash scripts/smoke.sh

@@ -1,7 +1,7 @@
 export function landing(): string {
   return `<main class="landing">
   <section class="hero">
-    <h1>when2meet-better</h1>
+    <h1>time2meet</h1>
     <p class="subtitle">minimal shared availability. no login, just a name.</p>
   </section>
   <form class="create-event" hx-post="/events" hx-swap="none">

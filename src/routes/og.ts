@@ -86,7 +86,7 @@ ogRoute.get("/event/:id/og.png", async (c) => {
       <div style="display:flex; font-size:56px; color:#1a1a1a; font-weight:400;">${titleEscaped}</div>
       <div style="display:flex; font-size:28px; color:#666; margin-top:12px;">${subtitleEscaped}</div>
       <div style="display:flex; flex-direction:row; margin-top:48px; align-items:flex-start;">${columnsHtml}</div>
-      <div style="display:flex; margin-top:auto; font-size:22px; color:#999;">when2meet-better</div>
+      <div style="display:flex; margin-top:auto; font-size:22px; color:#999;">time2meet</div>
     </div>
   `;
 

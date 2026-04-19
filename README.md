@@ -1,133 +1,76 @@
-# when2meet-better
+# time2meet
 
-A minimal, open-source when2meet clone running on Cloudflare Workers + Turso. No login required, URL-as-identity. Dynamically-rendered OG image so Slack unfurls the live availability heatmap.
-
-
+A minimal, open-source [when2meet](https://when2meet.com) clone on Cloudflare Workers + Turso. No login. URL-as-identity. Slack unfurls render the live availability heatmap as an OG image.
 
 ## Stack
 
 - Runtime: Cloudflare Workers
 - Framework: Hono
-- DB: Turso / libSQL via `@tursodatabase/serverless/compat`
+- DB: Turso / libSQL via `@libsql/client`
 - Frontend: vanilla JS (drag-select grid) + HTMX
 - OG image: `workers-og`
 
-## Features
+## Environments
 
-- URL-based events, no login
-- Drag-to-select availability grid (mouse + touch)
-- Live heatmap results
-- Slack URL unfurl with dynamic OG image — zero Slack app install
-- Free to host on Cloudflare Workers free tier + Turso free tier
+| Name         | Worker name         | Turso DB              | Where secrets live          |
+| ------------ | ------------------- | --------------------- | --------------------------- |
+| `local`      | `time2meet-local`   | local sqld via `turso dev` | `.dev.vars` (gitignored) |
+| `preview`    | `time2meet-preview` | `time2meet-preview`   | Cloudflare dashboard        |
+| `production` | `time2meet`         | `time2meet-production`| Cloudflare dashboard        |
 
-## Quick start (local dev)
+## Local dev
 
-Install deps and the turso CLI:
+One-time:
 
 ```bash
 npm install
-# one-time: curl -sSfL https://get.tur.so/install.sh | bash
+curl -sSfL https://get.tur.so/install.sh | bash   # turso CLI, only for the local libSQL server
 ```
 
-Start a local libSQL server (no account, no real DB needed):
+Run:
 
 ```bash
-mkdir -p .data
-turso dev --db-file .data/local.db
+npm run dev
 ```
 
-In another terminal, create `.dev.vars` at the project root. These values
-are local-only — not real secrets:
+That single command starts a local libSQL server (`turso dev`), applies the schema, and runs `wrangler dev` at <http://localhost:8787>. On first run it copies `.dev.vars.example` to `.dev.vars`. Both files contain only fake local-only values.
 
-```
-DB_URL=http://127.0.0.1:8080
-DB_AUTH_TOKEN=dev
-COOKIE_SECRET=<random 32+ byte string>
-```
+## Deploy
 
-Generate a COOKIE_SECRET:
+Both environments deploy automatically through **Cloudflare Workers Builds** — no GitHub secrets, no `wrangler deploy` from your laptop:
+
+- Push to `main` → `time2meet` (production)
+- Push to any other branch / PR → `time2meet-preview`
+
+One-time setup (Cloudflare dashboard → Workers & Pages → time2meet → Settings → Builds):
+
+1. Connect this GitHub repo
+2. Build command: `npm ci`
+3. Deploy command: `npx wrangler deploy --env production` for `main`, `npx wrangler deploy --env preview` for other branches
+4. Add per-environment variables: `DB_URL`, `DB_AUTH_TOKEN`, `COOKIE_SECRET`
+
+Generate a `COOKIE_SECRET`:
 
 ```bash
 node -e "console.log(crypto.randomBytes(32).toString('hex'))"
 ```
 
-Apply schema and run the Worker:
+## DB migrations
+
+Migrations are manual and idempotent (`CREATE TABLE IF NOT EXISTS`). Run from your laptop before pushing any schema-changing commit:
 
 ```bash
-npm run migrate
-npm run dev
+turso auth login                # one-time
+npm run migrate:preview         # mints a 10m token, applies src/db/schema.sql
+npm run migrate:production
 ```
 
-Open http://localhost:8787
+`scripts/migrate.sh` mints a 10-minute Turso token via the `turso` CLI and discards it. No long-lived prod credentials ever touch disk.
 
-## Working in a git worktree
+## CI
 
-`.dev.vars` is gitignored and lives only at the main checkout. When creating a new worktree (e.g. under `.claude/worktrees/`), copy it over before running `npm run dev` or `npm run test:e2e`:
-
-```bash
-cp ../../../.dev.vars .dev.vars   # adjust relative path to the main checkout
-```
-
-If `.dev.vars` points at a local sqld (e.g. `http://127.0.0.1:8080`), make sure sqld is running from the main checkout's `.data/` directory:
-
-```bash
-# from the main checkout, once per machine session
-sqld -d .data --http-listen-addr 127.0.0.1:8080
-```
-
-All worktrees then share that single DB.
-
-## Deploy
-
-One-time setup:
-
-```bash
-wrangler login
-wrangler secret put DB_URL
-wrangler secret put DB_AUTH_TOKEN
-wrangler secret put COOKIE_SECRET
-```
-
-Manual deploy (no secrets on disk — `migrate:prod` mints a short-lived
-10-minute Turso token via the `turso` CLI):
-
-```bash
-turso auth login            # one-time
-npm run migrate:prod        # scripts/migrate-prod.sh
-npm run deploy
-```
-
-Override the DB name if it's not `w2mb-prod`:
-
-```bash
-TURSO_DB=my-db npm run migrate:prod
-```
-
-### Automated deploys (Cloudflare Workers Builds)
-
-Deploys are handled directly by Cloudflare — no GitHub Actions tokens
-required. One-time setup:
-
-1. Cloudflare dashboard → Workers & Pages → `when2meet-better` → Settings → Builds
-2. Connect the GitHub repo, branch `main`
-3. Build command: `npm ci`, deploy command: `npx wrangler deploy`
-
-Every push to `main` triggers a Cloudflare-side build + deploy. Secrets
-already set via `wrangler secret put` apply. No GH repo secrets needed.
-
-`.github/workflows/ci.yml` runs typecheck + e2e on pushes and PRs as a
-signal layer; it does not deploy.
-
-Prod DB migrations are run manually — `npm run migrate:prod` from your
-laptop before pushing any schema-changing commit. Keeps the Turso token
-off GitHub's and Cloudflare's build envs.
-
-After a deploy, verify with `bash scripts/smoke.sh` pointing at the
-deployed URL:
-
-```bash
-APP_URL=https://when2meet-better.<subdomain>.workers.dev bash scripts/smoke.sh
-```
+- `.github/workflows/ci.yml` — typecheck + Playwright e2e on every push/PR. Spins up `turso dev` locally; never touches a real DB.
+- `.github/workflows/smoke.yml` — after every push to `main` (waits 60s for Workers Builds) and hourly on a schedule, runs `scripts/smoke.sh` against the live URL in `vars.APP_URL`. Catches "deployed but broken" within an hour.
 
 ## Project layout
 
@@ -140,12 +83,12 @@ src/
   views/          # HTML template functions
   lib/            # cookies, ids, slots, heatmap
   fonts/          # embedded font for OG image
-public/           # static assets served by Worker
-  grid.js         # drag-select
-  styles.css
-  htmx.min.js
+public/           # static assets
 scripts/
-  migrate.ts      # apply schema.sql to Turso
+  dev.sh          # local bootstrap: turso dev + migrate + wrangler dev
+  migrate.sh      # apply schema to preview/production via turso CLI
+  migrate.ts      # the actual migrator (reads $DB_URL / $DB_AUTH_TOKEN)
+  smoke.sh        # GET / + POST /events check against a deployed URL
 ```
 
 ## How Slack unfurl works
@@ -154,14 +97,13 @@ The event page injects OG meta tags including an `og:image` URL with a `?v=<upda
 
 ## Identity model
 
-Names are open: anyone who enters the same name edits the same row. No passwords, no logout — identity is just the name the user typed. The event creator holds an admin token (cookie) and can delete a participant row if needed.
+Names are open: anyone who enters the same name edits the same row. No passwords. The event creator holds an admin token (cookie) and can delete a participant row.
 
 ## Known v1 limitations
 
-- No timezones (displayed as entered, like when2meet).
-- No real-time updates; results panel polls every 5s.
-- Single-participant concurrent edits from two tabs: last-writer-wins.
-- Dates are picked via comma-separated YYYY-MM-DD strings in v1. A real date picker UI is future work.
+- No timezones (displayed as entered, like when2meet)
+- No real-time updates; results panel polls every 5s
+- Concurrent edits from two tabs of the same name: last-writer-wins
 
 ## License
 
