@@ -29,14 +29,14 @@ export function event(
     : identifyFormBody(ev.id);
 
   const n = participants.length;
-  const caption = n === 0
-    ? "No responses yet — share the link below to invite."
-    : `${n} ${n === 1 ? "response" : "responses"}`;
+  const captionHtml = n === 0
+    ? `<p class="muted">No responses yet — share the link below to invite.</p>`
+    : "";
 
   return `<main class="event-page">
 <header class="event-header">
 <h1>${escape(ev.title)}</h1>
-<p class="muted">${escape(caption)}</p>
+${captionHtml}
 <div class="share-row">
 <input class="share-url" type="text" readonly value="${escape(shareUrl)}" onclick="this.select()">
 <button type="button" class="copy-btn" data-copy="${escape(shareUrl)}">Copy</button>
