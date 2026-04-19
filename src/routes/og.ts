@@ -137,8 +137,12 @@ ogRoute.get("/event/:id/og.png", async (c) => {
 
   // ----- Text pieces -----
   const titleEscaped = clipTitle(escapeHtml(ev.title), 50);
+  // Day-of-week / recurring mode stores slots against sentinel dates in the
+  // 1970-01-04..1970-01-10 week. Concrete calendar dates would be meaningless
+  // there, so suppress the date pill — the column letters already label the days.
+  const isRecurring = days.length > 0 && days[0].startsWith("1970-01-");
   const dateRangeText =
-    days.length === 0
+    days.length === 0 || isRecurring
       ? ""
       : days.length === 1
         ? formatDay(days[0])
