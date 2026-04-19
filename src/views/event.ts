@@ -30,7 +30,7 @@ export function event(
 
   const n = participants.length;
   const captionHtml = n === 0
-    ? `<p class="muted">No responses yet — share the link below to invite.</p>`
+    ? `<p class="muted">No responses yet — share the link to invite.</p>`
     : "";
 
   return `<main class="event-page">
@@ -39,10 +39,7 @@ export function event(
 <h1>${escape(ev.title)}</h1>
 ${captionHtml}
 </div>
-<div class="share-row">
-<input class="share-url" type="text" readonly value="${escape(shareUrl)}" onclick="this.select()">
-<button type="button" class="copy-btn" data-copy="${escape(shareUrl)}">Copy</button>
-</div>
+<button type="button" class="share-link copy-btn" data-copy="${escape(shareUrl)}" title="Click to copy">${escape(shareUrl)}</button>
 </header>
 
 <script>window.__EVENT__ = ${eventJson};</script>

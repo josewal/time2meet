@@ -217,16 +217,13 @@ ${participants
   root.querySelectorAll(".best-slots li[data-slot]").forEach(function(li){
     var si = parseInt(li.getAttribute("data-slot") || "-1", 10);
     if (!(si >= 0)) return;
-    var cell = grid ? grid.querySelector('.cell.heat[data-slot="' + si + '"]') : null;
     var col = rows > 0 ? Math.floor(si / rows) : -1;
     var row = rows > 0 ? si % rows : -1;
     li.addEventListener("mouseenter", function(){
-      if (cell) cell.classList.add("best-hover");
       if (headers[col]) headers[col].classList.add("axis-hover");
       if (labels[row]) labels[row].classList.add("axis-hover");
     });
     li.addEventListener("mouseleave", function(){
-      if (cell) cell.classList.remove("best-hover");
       if (headers[col]) headers[col].classList.remove("axis-hover");
       if (labels[row]) labels[row].classList.remove("axis-hover");
     });

@@ -4,11 +4,8 @@
     if (!btn) return;
     const text = btn.dataset.copy || "";
     const done = () => {
-      const prev = btn.textContent;
-      btn.textContent = "Copied";
       btn.classList.add("copied");
       setTimeout(() => {
-        btn.textContent = prev;
         btn.classList.remove("copied");
       }, 1200);
     };

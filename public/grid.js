@@ -4,16 +4,12 @@
   const grid = document.getElementById("grid");
   if (!grid || !EVENT) return;
 
-  const rows = parseInt(grid.dataset.rows, 10);
   const cells = Array.from(grid.querySelectorAll(".cell"));
   const cellBySlot = new Map(cells.map(c => [parseInt(c.dataset.slot, 10), c]));
   const selected = new Set(INITIAL);
 
-  // Paint initial selection
   for (const s of selected) cellBySlot.get(s)?.classList.add("selected");
 
-  const colOf = (slot) => Math.floor(slot / rows);
-  const rowOf = (slot) => slot % rows;
   const slotOf = (el) => {
     if (!el || !el.classList || !el.classList.contains("cell")) return -1;
     const v = parseInt(el.dataset.slot, 10);
@@ -26,75 +22,16 @@
     return;
   }
 
-  let dragging = false;
-  let dragMode = "add";
-  let dragStartSlot = -1;
-  let currentSlot = -1;
-  let rafPending = false;
+  let dragMode = null;
+  let touched = new Set();
 
-  const rectSlots = (a, b) => {
-    const c1 = colOf(a), c2 = colOf(b), r1 = rowOf(a), r2 = rowOf(b);
-    const cmin = Math.min(c1, c2), cmax = Math.max(c1, c2);
-    const rmin = Math.min(r1, r2), rmax = Math.max(r1, r2);
-    const out = [];
-    for (let c = cmin; c <= cmax; c++)
-      for (let r = rmin; r <= rmax; r++) out.push(c * rows + r);
-    return out;
-  };
-
-  const clearPreview = () => {
-    for (const c of cells) c.classList.remove("preview-add", "preview-remove");
-  };
-
-  const renderPreview = () => {
-    rafPending = false;
-    if (!dragging || currentSlot < 0 || dragStartSlot < 0) return;
-    clearPreview();
-    const cls = dragMode === "add" ? "preview-add" : "preview-remove";
-    for (const s of rectSlots(dragStartSlot, currentSlot)) {
-      cellBySlot.get(s)?.classList.add(cls);
-    }
-  };
-
-  const scheduleRender = () => {
-    if (rafPending) return;
-    rafPending = true;
-    requestAnimationFrame(renderPreview);
-  };
-
-  const startDrag = (slot) => {
-    dragging = true;
-    dragStartSlot = slot;
-    currentSlot = slot;
-    dragMode = selected.has(slot) ? "remove" : "add";
-    scheduleRender();
-  };
-
-  const moveDrag = (slot) => {
-    if (!dragging || slot < 0 || slot === currentSlot) return;
-    currentSlot = slot;
-    scheduleRender();
-  };
-
-  const commit = () => {
-    if (!dragging) return;
-    const slots = rectSlots(dragStartSlot, currentSlot);
-    for (const s of slots) {
-      const c = cellBySlot.get(s);
-      if (!c) continue;
-      if (dragMode === "add") { selected.add(s); c.classList.add("selected"); }
-      else { selected.delete(s); c.classList.remove("selected"); }
-    }
-    clearPreview();
-    dragging = false;
-    dragStartSlot = currentSlot = -1;
-    save();
-  };
-
-  const cancel = () => {
-    clearPreview();
-    dragging = false;
-    dragStartSlot = currentSlot = -1;
+  const apply = (slot) => {
+    if (slot < 0 || touched.has(slot)) return;
+    touched.add(slot);
+    const c = cellBySlot.get(slot);
+    if (!c) return;
+    if (dragMode === "add") { selected.add(slot); c.classList.add("selected"); }
+    else { selected.delete(slot); c.classList.remove("selected"); }
   };
 
   let saveTimer = null;
@@ -116,19 +53,28 @@
     }, 250);
   }
 
+  const endDrag = () => {
+    if (dragMode === null) return;
+    dragMode = null;
+    touched = new Set();
+    save();
+  };
+
   // Mouse
   grid.addEventListener("mousedown", (e) => {
     const s = slotOf(e.target);
     if (s < 0) return;
     e.preventDefault();
-    startDrag(s);
+    dragMode = selected.has(s) ? "remove" : "add";
+    touched = new Set();
+    apply(s);
   });
   grid.addEventListener("mousemove", (e) => {
-    if (!dragging) return;
-    moveDrag(slotOf(e.target));
+    if (dragMode === null) return;
+    apply(slotOf(e.target));
   });
-  window.addEventListener("mouseup", () => { if (dragging) commit(); });
-  document.addEventListener("mouseleave", () => { if (dragging) cancel(); });
+  window.addEventListener("mouseup", endDrag);
+  document.addEventListener("mouseleave", endDrag);
 
   // Touch
   grid.addEventListener("touchstart", (e) => {
@@ -136,14 +82,16 @@
     const el = document.elementFromPoint(t.clientX, t.clientY);
     const s = slotOf(el);
     if (s < 0) return;
-    startDrag(s);
+    dragMode = selected.has(s) ? "remove" : "add";
+    touched = new Set();
+    apply(s);
   }, { passive: true });
   grid.addEventListener("touchmove", (e) => {
-    if (!dragging) return;
+    if (dragMode === null) return;
     e.preventDefault();
     const t = e.touches[0];
-    moveDrag(slotOf(document.elementFromPoint(t.clientX, t.clientY)));
+    apply(slotOf(document.elementFromPoint(t.clientX, t.clientY)));
   }, { passive: false });
-  grid.addEventListener("touchend", () => { if (dragging) commit(); });
-  grid.addEventListener("touchcancel", () => { if (dragging) cancel(); });
+  grid.addEventListener("touchend", endDrag);
+  grid.addEventListener("touchcancel", endDrag);
 })();

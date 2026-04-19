@@ -281,35 +281,44 @@ body:has(.event-page) { max-width: 1120px; }
   margin: 0 0 10px;
 }
 
-.share-row {
-  display: flex;
-  gap: 6px;
-  margin: 0;
-  flex: 0 1 360px;
-  min-width: 0;
-}
-.share-url {
-  flex: 1;
-  min-width: 0;
+.share-link {
   font: inherit;
   font-size: var(--text-sm);
-  padding: 6px 10px;
+  color: var(--color-fg);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface-alt-soft);
+  padding: 6px 12px;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.share-link::before {
+  content: "Copy link · ";
+  font-weight: 600;
   color: var(--color-muted);
 }
-.copy-btn {
-  padding: 6px 12px;
-  font-size: var(--text-sm);
-  background: var(--color-surface);
-  color: var(--color-fg);
-  border: 1px solid var(--color-border);
+.share-link:hover {
+  opacity: 1;
+  background: var(--color-surface-alt);
+  border-color: var(--color-muted);
 }
-.copy-btn.copied {
+.share-link.copied,
+.share-link.copied:hover {
   background: var(--color-primary);
   color: var(--color-surface);
   border-color: var(--color-primary);
+}
+.share-link.copied::before {
+  content: "Copied · ";
+  color: var(--color-surface);
 }
 
 @media (max-width: 900px) {
@@ -382,16 +391,11 @@ body:has(.event-page) { max-width: 1120px; }
   border-radius: var(--radius-xs);
 }
 .cell.selected { background: var(--color-primary); }
-.cell.preview-add { background: var(--color-primary-soft); }
-.cell.preview-remove { background: var(--color-danger); }
 
-.grid:not(.heatmap):not(.disabled) .cell:hover {
-  outline: 1px solid var(--color-fg);
+.grid:not(.heatmap):not(.disabled) .cell:hover:not(.selected) {
+  background: var(--color-primary-soft);
 }
-.grid:not(.heatmap):not(.disabled) .cell.selected:hover {
-  background: var(--color-danger);
-  outline: 1px solid var(--color-danger-strong);
-}
+.grid:not(.heatmap):not(.disabled) .cell.selected:hover { opacity: 0.88; }
 
 /* Crosshair: highlight only the day header + time label of the hovered cell */
 .grid-day-header.axis-hover,
@@ -409,12 +413,6 @@ body:has(.event-page) { max-width: 1120px; }
 .heatmap .cell.heat[data-count="0"] { background: var(--color-cell-empty); }
 .heatmap .cell.heat:not([data-count="0"]) {
   background: rgba(var(--color-primary-rgb), var(--intensity, 0.2));
-}
-.heatmap .cell.heat:hover:not([data-count="0"]) {
-  outline: 1px solid var(--color-fg);
-}
-.heatmap .cell.best-hover {
-  outline: 1px solid var(--color-fg);
 }
 
 /* Results */
