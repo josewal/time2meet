@@ -308,6 +308,13 @@ body:has(.event-page) { max-width: 1120px; }
 .cell.selected { background: var(--accent); }
 .cell.preview-add { background: var(--accent-soft); }
 .cell.preview-remove { background: var(--danger); }
+
+/* Crosshair: highlight only the day header + time label of the hovered cell */
+.grid-day-header.axis-hover,
+.grid-time-label.axis-hover {
+  color: var(--fg);
+  font-weight: 700;
+}
 #grid.disabled .cell {
   cursor: not-allowed;
   opacity: 0.6;

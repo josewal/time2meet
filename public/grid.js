@@ -13,6 +13,36 @@
   // Paint initial selection
   for (const s of selected) cellBySlot.get(s)?.classList.add("selected");
 
+  const colOf = (slot) => Math.floor(slot / rows);
+  const rowOf = (slot) => slot % rows;
+  const slotOf = (el) => {
+    if (!el || !el.classList || !el.classList.contains("cell")) return -1;
+    const v = parseInt(el.dataset.slot, 10);
+    return Number.isFinite(v) ? v : -1;
+  };
+
+  // Crosshair hover: highlight just the day header and time label
+  const headers = Array.from(grid.querySelectorAll(".grid-day-header"));
+  const timeLabels = Array.from(grid.querySelectorAll(".grid-time-label"));
+
+  let hoverCol = -1;
+  let hoverRow = -1;
+  const setHover = (col, row) => {
+    if (col === hoverCol && row === hoverRow) return;
+    if (hoverCol >= 0) headers[hoverCol]?.classList.remove("axis-hover");
+    if (hoverRow >= 0) timeLabels[hoverRow]?.classList.remove("axis-hover");
+    hoverCol = col;
+    hoverRow = row;
+    if (col >= 0) headers[col]?.classList.add("axis-hover");
+    if (row >= 0) timeLabels[row]?.classList.add("axis-hover");
+  };
+  grid.addEventListener("mouseover", (e) => {
+    const s = slotOf(e.target);
+    if (s < 0) { setHover(-1, -1); return; }
+    setHover(colOf(s), rowOf(s));
+  });
+  grid.addEventListener("mouseleave", () => setHover(-1, -1));
+
   const readOnly = !EVENT.me;
   if (readOnly) {
     grid.classList.add("disabled");
@@ -24,14 +54,6 @@
   let dragStartSlot = -1;
   let currentSlot = -1;
   let rafPending = false;
-
-  const slotOf = (el) => {
-    if (!el || !el.classList || !el.classList.contains("cell")) return -1;
-    const v = parseInt(el.dataset.slot, 10);
-    return Number.isFinite(v) ? v : -1;
-  };
-  const colOf = (slot) => Math.floor(slot / rows);
-  const rowOf = (slot) => slot % rows;
 
   const rectSlots = (a, b) => {
     const c1 = colOf(a), c2 = colOf(b), r1 = rowOf(a), r2 = rowOf(b);
