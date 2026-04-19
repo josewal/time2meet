@@ -129,7 +129,7 @@ export function heatmapMarkup(
         ? `${cell.count}/${total}: ${cell.names.join(", ")}`
         : `0/${total}`;
       parts.push(
-        `<div class="cell heat" data-count="${cell.count}" style="--intensity:${intensity};" title="${escape(title)}"></div>`,
+        `<div class="cell heat" data-slot="${slotIndex}" data-count="${cell.count}" style="--intensity:${intensity};" title="${escape(title)}"></div>`,
       );
     }
   }
@@ -145,4 +145,25 @@ export function gridReady(
   const cellsJson = JSON.stringify(initialCells);
   const grid = gridMarkup(eventData);
   return `<div id="grid-area">${grid}<script>window.__EVENT__ = ${eventJson}; window.__INITIAL_CELLS__ = ${cellsJson};</script><script src="/grid.js?v=${Date.now()}"></script></div>`;
+}
+
+export function identifyFormBody(eventId: string): string {
+  return `<h2 class="panel-title">Your name</h2>
+<form class="identify" hx-post="/event/${escape(eventId)}/identify" hx-swap="innerHTML" hx-target="#left-panel">
+<input name="name" required maxlength="60" placeholder="Your name" autocomplete="name">
+<button type="submit">Enter</button>
+</form>
+<div id="grid-area" class="muted hint">Enter your name to mark your availability. The grid on the right shows when everyone is free.</div>
+<div id="identify-error"></div>`;
+}
+
+export function editingAsBody(
+  eventData: EventClientData,
+  meName: string,
+  initialCells: number[],
+): string {
+  return `<h2 class="panel-title">Your availability</h2>
+<p class="me">editing as <strong>${escape(meName)}</strong> · <button type="button" class="linkish" hx-post="/event/${escape(eventData.id)}/logout">switch name</button></p>
+${gridReady(eventData, initialCells)}
+<div id="identify-error"></div>`;
 }
