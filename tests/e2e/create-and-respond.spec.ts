@@ -3,7 +3,7 @@ import { createEventViaApi, futureDates, uniqueTitle } from "./helpers";
 
 test("landing page renders the create-event form", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toHaveText("when2meet-better");
+  await expect(page.locator("h1")).toHaveText("time2meet");
   await expect(page.locator("form.create-event")).toBeVisible();
   await expect(page.locator('input[name="title"]')).toBeVisible();
   await expect(page.locator("#dates-input")).toHaveAttribute("type", "hidden");

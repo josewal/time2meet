@@ -1,4 +1,4 @@
-name = "when2meet-better"
+name = "time2meet-local"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
@@ -7,7 +7,20 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./public"
 binding = "ASSETS"
 
-# Secrets (set via `wrangler secret put <NAME>`):
-#   DB_URL           — Turso libSQL URL, e.g. libsql://w2mb-<user>.turso.io
-#   DB_AUTH_TOKEN    — Turso auth token
-#   COOKIE_SECRET    — random 32+ byte string for HMAC-signing cookies
+# Two real environments — both deploy through Cloudflare Workers Builds.
+# Secrets (DB_URL, DB_AUTH_TOKEN, COOKIE_SECRET) are configured per-env
+# in the Cloudflare dashboard. Nothing on disk, nothing in GitHub.
+
+[env.preview]
+name = "time2meet-preview"
+
+[env.preview.assets]
+directory = "./public"
+binding = "ASSETS"
+
+[env.production]
+name = "time2meet"
+
+[env.production.assets]
+directory = "./public"
+binding = "ASSETS"

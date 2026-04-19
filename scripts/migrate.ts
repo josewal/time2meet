@@ -3,6 +3,16 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Apply src/db/schema.sql to the libSQL DB at $DB_URL.
+//
+// Reads $DB_URL and $DB_AUTH_TOKEN from process.env. Falls back to
+// .dev.vars in the repo root, so `npm run migrate` works after a
+// fresh checkout with the example config copied in.
+//
+// For preview/production, use scripts/migrate.sh — it mints a
+// short-lived token via the turso CLI and exports it before calling
+// this script.
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 
@@ -33,52 +43,27 @@ function splitStatements(sql: string): string[] {
     .filter((s) => s.length > 0);
 }
 
-function parseArgs(argv: string[]): { envName: string } {
-  let envName = "dev";
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a === "--env" || a === "-e") {
-      const next = argv[i + 1];
-      if (!next) {
-        console.error("--env requires a value (e.g. --env prod)");
-        process.exit(1);
-      }
-      envName = next;
-      i++;
-    } else if (a.startsWith("--env=")) {
-      envName = a.slice("--env=".length);
-    }
-  }
-  return { envName };
-}
-
 async function main(): Promise<void> {
-  const { envName } = parseArgs(process.argv.slice(2));
-
   let url = process.env.DB_URL;
   let authToken = process.env.DB_AUTH_TOKEN;
   let source = "process.env";
 
   if (!url || !authToken) {
-    const envFile = `.${envName}.vars`;
-    const envPath = resolve(repoRoot, envFile);
-    let envContents: string;
+    const envPath = resolve(repoRoot, ".dev.vars");
     try {
-      envContents = readFileSync(envPath, "utf8");
+      const fileEnv = parseEnv(readFileSync(envPath, "utf8"));
+      url = url || fileEnv.DB_URL;
+      authToken = authToken || fileEnv.DB_AUTH_TOKEN;
+      source = ".dev.vars";
     } catch {
-      console.error(
-        `No DB_URL/DB_AUTH_TOKEN in env and failed to read ${envPath}`,
-      );
-      process.exit(1);
+      // fall through to the missing-vars error below
     }
-    const fileEnv = parseEnv(envContents);
-    url = url || fileEnv.DB_URL;
-    authToken = authToken || fileEnv.DB_AUTH_TOKEN;
-    source = envFile;
   }
 
   if (!url || !authToken) {
-    console.error(`Missing DB_URL or DB_AUTH_TOKEN (source: ${source})`);
+    console.error(
+      "Missing DB_URL or DB_AUTH_TOKEN. Set them in process.env or .dev.vars.",
+    );
     process.exit(1);
   }
 
@@ -92,12 +77,10 @@ async function main(): Promise<void> {
   console.log(`migrating ${host} (source: ${source})`);
 
   const schemaPath = resolve(repoRoot, "src/db/schema.sql");
-  const schema = readFileSync(schemaPath, "utf8");
-  const statements = splitStatements(schema);
+  const statements = splitStatements(readFileSync(schemaPath, "utf8"));
 
   const client = createClient({ url, authToken });
 
-  let failed = false;
   for (let i = 0; i < statements.length; i++) {
     const stmt = statements[i]!;
     const preview = stmt.replace(/\s+/g, " ").slice(0, 80);
@@ -107,12 +90,9 @@ async function main(): Promise<void> {
       console.log("  ok");
     } catch (err) {
       console.error("  failed:", err instanceof Error ? err.message : err);
-      failed = true;
-      break;
+      process.exit(1);
     }
   }
-
-  process.exit(failed ? 1 : 0);
 }
 
 main().catch((err) => {

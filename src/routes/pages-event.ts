@@ -33,7 +33,7 @@ pagesEventRoute.get("/event/:id", async (c) => {
 
   const html = layout(
     {
-      title: `${ev.title} · when2meet-better`,
+      title: `${ev.title} · time2meet`,
       description: `${parts.length} responses. Click to add your availability.`,
       ogImageUrl,
       ogUrl,

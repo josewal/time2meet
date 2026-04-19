@@ -1,18 +1,21 @@
 {
-  "name": "when2meet-better",
+  "name": "time2meet",
   "version": "0.1.0",
   "description": "A minimal, better-UX open-source when2meet clone on Cloudflare Workers",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "bash scripts/dev.sh",
+    "deploy:preview": "wrangler deploy --env preview",
+    "deploy:production": "wrangler deploy --env production",
     "migrate": "tsx scripts/migrate.ts",
-    "migrate:prod": "bash scripts/migrate-prod.sh",
+    "migrate:preview": "bash scripts/migrate.sh preview",
+    "migrate:production": "bash scripts/migrate.sh production",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "smoke": "bash scripts/smoke.sh"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
@@ -23,6 +26,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250101.0",
     "@playwright/test": "^1.59.1",
+    "@types/node": "^22.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0",
     "wrangler": "^3.80.0"

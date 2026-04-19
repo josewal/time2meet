@@ -1,0 +1,10 @@
+# Local-only dev config. Wrangler auto-loads this for `wrangler dev`.
+# `npm run dev` copies this to .dev.vars on first run.
+#
+# All values here are FAKE — they target the local turso dev server
+# started by scripts/dev.sh. No real credentials belong in this file.
+# Preview/production secrets live in the Cloudflare dashboard.
+
+DB_URL=http://127.0.0.1:8080
+DB_AUTH_TOKEN=dev
+COOKIE_SECRET=local-only-cookie-secret-0123456789abcdef0123456789abcdef
