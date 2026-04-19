@@ -62,7 +62,7 @@ export function results(event: EventRow, participants: ParticipantRow[]): string
 
   const participantListHtml =
     n === 0
-      ? `<p class="muted">No responses yet.</p>`
+      ? `<p class="muted">No responses yet — share the link to invite.</p>`
       : `<div class="participant-list">
 <strong class="responses-label">${n} ${n === 1 ? "response" : "responses"}:</strong>
 ${participants

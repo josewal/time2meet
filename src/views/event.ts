@@ -28,16 +28,10 @@ export function event(
     ? editingAsBody(clientData, me.name, me.cells)
     : identifyFormBody(ev.id);
 
-  const n = participants.length;
-  const captionHtml = n === 0
-    ? `<p class="muted">No responses yet — share the link to invite.</p>`
-    : "";
-
   return `<main class="event-page">
 <header class="event-header">
 <div class="event-header__title">
 <h1>${escape(ev.title)}</h1>
-${captionHtml}
 </div>
 <button type="button" class="share-link copy-btn" data-copy="${escape(shareUrl)}" title="Click to copy">${escape(shareUrl)}</button>
 </header>
