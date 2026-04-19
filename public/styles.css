@@ -175,6 +175,18 @@ button[disabled] { opacity: 0.5; cursor: not-allowed; }
 
 .dp-summary { margin-top: 10px; font-size: 0.75rem; }
 
+.window-hint { margin: 0 0 4px; font-size: 0.75rem; }
+.window-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.window-row label { display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 480px) {
+  .window-row { grid-template-columns: 1fr 1fr; }
+  .window-row label:last-child { grid-column: 1 / -1; }
+}
+
 /* Event page */
 body:has(.event-page) { max-width: 1120px; }
 .event-page {

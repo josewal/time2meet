@@ -42,23 +42,27 @@ export function landing(): string {
       </div>
       <input type="hidden" name="dates" id="dates-input" required />
     </div>
-    <div class="row">
-      <label>
-        <span>Start time</span>
-        <input type="time" name="startTime" value="09:00" required />
-      </label>
-      <label>
-        <span>End time</span>
-        <input type="time" name="endTime" value="17:00" required />
-      </label>
-      <label>
-        <span>Slot size</span>
-        <select name="slotMinutes">
-          <option value="15">15 min</option>
-          <option value="30" selected>30 min</option>
-          <option value="60">60 min</option>
-        </select>
-      </label>
+    <div class="field">
+      <span class="field-label">Daily window</span>
+      <p class="muted window-hint">the range to ask about each day</p>
+      <div class="window-row">
+        <label>
+          <span>From</span>
+          <input type="time" name="startTime" value="09:00" required />
+        </label>
+        <label>
+          <span>To</span>
+          <input type="time" name="endTime" value="17:00" required />
+        </label>
+        <label>
+          <span>Slot size</span>
+          <select name="slotMinutes">
+            <option value="15">15 min</option>
+            <option value="30" selected>30 min</option>
+            <option value="60">60 min</option>
+          </select>
+        </label>
+      </div>
     </div>
     <button type="submit">Create event</button>
     <div id="create-error" class="error-slot"></div>
