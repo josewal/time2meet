@@ -1,4 +1,4 @@
-name = "time2meet-local"
+name = "when2meet-better"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
