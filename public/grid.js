@@ -53,20 +53,9 @@
 
   const indicator = document.getElementById("save-indicator");
   const indicatorText = indicator?.querySelector(".save-indicator__text");
-  let savedAt = Date.now();
-  let relTimer = null;
   let collapseTimer = null;
   const COLLAPSE_AFTER_MS = 60000;
 
-  function formatSince(ts) {
-    const secs = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-    if (secs < 10) return "just now";
-    if (secs < 60) return `${secs}s ago`;
-    const mins = Math.floor(secs / 60);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ago`;
-  }
   function expand() {
     indicator?.classList.remove("save-indicator--collapsed");
   }
@@ -79,11 +68,10 @@
   function renderSaved() {
     if (!indicator || !indicatorText) return;
     indicator.dataset.state = "saved";
-    indicatorText.textContent = `Saved · ${formatSince(savedAt)}`;
+    indicatorText.textContent = "Saved";
   }
   function renderSaving() {
     if (!indicator || !indicatorText) return;
-    if (relTimer) { clearInterval(relTimer); relTimer = null; }
     if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
     expand();
     indicator.dataset.state = "saving";
@@ -91,16 +79,11 @@
   }
   function renderError() {
     if (!indicator) return;
-    if (relTimer) { clearInterval(relTimer); relTimer = null; }
     if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
     expand();
     indicator.dataset.state = "error";
     indicator.innerHTML = '<span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text">Couldn\u2019t save — </span><button type="button" class="save-indicator__retry">retry</button>';
     indicator.querySelector(".save-indicator__retry")?.addEventListener("click", save);
-  }
-  function startRelTimer() {
-    if (relTimer) clearInterval(relTimer);
-    relTimer = setInterval(renderSaved, 15000);
   }
 
   let saveTimer = null;
@@ -133,12 +116,10 @@
           return;
         }
         if (inFlight === 0 && !saveTimer) {
-          savedAt = Date.now();
           if (indicator && !indicator.querySelector(".save-indicator__text")) {
             indicator.innerHTML = '<span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text"></span>';
           }
           renderSaved();
-          startRelTimer();
           scheduleCollapse();
         }
         if (window.htmx) window.htmx.trigger("#results", "refresh");
@@ -150,9 +131,7 @@
     }, 600);
   }
 
-  savedAt = Date.now();
   renderSaved();
-  startRelTimer();
   scheduleCollapse();
 
   const endDrag = () => {
