@@ -53,17 +53,17 @@
 
   const indicator = document.getElementById("save-indicator");
   const indicatorText = indicator?.querySelector(".save-indicator__text");
-  let collapseTimer = null;
-  const COLLAPSE_AFTER_MS = 60000;
+  let quietTimer = null;
+  const QUIET_AFTER_MS = 10000;
 
   function expand() {
-    indicator?.classList.remove("save-indicator--collapsed");
+    indicator?.classList.remove("save-indicator--quiet");
   }
-  function scheduleCollapse() {
-    if (collapseTimer) clearTimeout(collapseTimer);
-    collapseTimer = setTimeout(() => {
-      indicator?.classList.add("save-indicator--collapsed");
-    }, COLLAPSE_AFTER_MS);
+  function scheduleQuiet() {
+    if (quietTimer) clearTimeout(quietTimer);
+    quietTimer = setTimeout(() => {
+      indicator?.classList.add("save-indicator--quiet");
+    }, QUIET_AFTER_MS);
   }
   function renderSaved() {
     if (!indicator || !indicatorText) return;
@@ -72,14 +72,14 @@
   }
   function renderSaving() {
     if (!indicator || !indicatorText) return;
-    if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
+    if (quietTimer) { clearTimeout(quietTimer); quietTimer = null; }
     expand();
     indicator.dataset.state = "saving";
     indicatorText.textContent = "Saving…";
   }
   function renderError() {
     if (!indicator) return;
-    if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
+    if (quietTimer) { clearTimeout(quietTimer); quietTimer = null; }
     expand();
     indicator.dataset.state = "error";
     indicator.innerHTML = '<span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text">Couldn\u2019t save — </span><button type="button" class="save-indicator__retry">retry</button>';
@@ -120,7 +120,7 @@
             indicator.innerHTML = '<span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text"></span>';
           }
           renderSaved();
-          scheduleCollapse();
+          scheduleQuiet();
         }
         if (window.htmx) window.htmx.trigger("#results", "refresh");
       }).catch(err => {
@@ -132,7 +132,7 @@
   }
 
   renderSaved();
-  scheduleCollapse();
+  scheduleQuiet();
 
   const endDrag = () => {
     if (dragMode === null) return;

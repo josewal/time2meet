@@ -520,6 +520,8 @@ body:has(.event-page) { max-width: 1120px; }
   color: var(--color-muted);
   letter-spacing: normal;
   text-transform: none;
+  opacity: 1;
+  transition: opacity var(--duration-slow) var(--ease-standard);
 }
 .save-indicator__dot {
   width: 6px;
@@ -530,21 +532,11 @@ body:has(.event-page) { max-width: 1120px; }
   flex: 0 0 auto;
 }
 .save-indicator__text {
-  overflow: hidden;
   white-space: nowrap;
-  max-width: 20ch;
-  opacity: 1;
-  transition: max-width var(--duration-slow) var(--ease-standard), opacity var(--duration-base) var(--ease-standard), margin var(--duration-slow) var(--ease-standard);
 }
-.save-indicator--collapsed .save-indicator__text {
-  max-width: 0;
-  opacity: 0;
-}
-.save-indicator--collapsed:hover .save-indicator__text,
-.save-indicator--collapsed:focus-within .save-indicator__text {
-  max-width: 20ch;
-  opacity: 1;
-}
+.save-indicator--quiet { opacity: 0.35; }
+.save-indicator--quiet:hover,
+.save-indicator--quiet:focus-within { opacity: 1; }
 .save-indicator[data-state="saved"] .save-indicator__dot { background: var(--color-primary); }
 .save-indicator[data-state="saving"] .save-indicator__dot {
   animation: save-sync 1100ms ease-in-out infinite;
