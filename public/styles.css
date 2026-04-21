@@ -529,6 +529,7 @@ body:has(.event-page) { max-width: 1120px; }
   transition: background var(--duration-fast) var(--ease-standard);
   flex: 0 0 auto;
 }
+.save-indicator[data-state="idle"] { display: none; }
 .save-indicator__text {
   white-space: nowrap;
   opacity: 1;

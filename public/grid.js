@@ -131,9 +131,6 @@
     }, 600);
   }
 
-  renderSaved();
-  scheduleQuiet();
-
   const endDrag = () => {
     if (dragMode === null) return;
     dragMode = null;

@@ -190,7 +190,7 @@ export function editingAsBody(
   meName: string,
   initialCells: number[],
 ): string {
-  return `<h2 class="panel-title panel-title--with-status">Your availability <span id="save-indicator" class="save-indicator" data-state="saved" aria-live="polite"><span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text">Saved</span></span></h2>
+  return `<h2 class="panel-title panel-title--with-status">Your availability <span id="save-indicator" class="save-indicator" data-state="idle" aria-live="polite"><span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text"></span></span></h2>
 <p class="me">editing as <strong>${escape(meName)}</strong> · <button type="button" class="linkish" hx-post="/event/${escape(eventData.id)}/logout">switch name</button></p>
 ${gridReady(eventData, initialCells)}
 <div id="identify-error"></div>`;
