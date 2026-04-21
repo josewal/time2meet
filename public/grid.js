@@ -22,22 +22,101 @@
     return;
   }
 
+  const rows = parseInt(grid.dataset.rows, 10) || 0;
+  for (const c of cells) {
+    c.setAttribute("role", "button");
+    c.setAttribute("tabindex", "0");
+    c.setAttribute("aria-pressed", c.classList.contains("selected") ? "true" : "false");
+  }
+
   let dragMode = null;
   let touched = new Set();
+
+  const setPressed = (c, on) => c.setAttribute("aria-pressed", on ? "true" : "false");
 
   const apply = (slot) => {
     if (slot < 0 || touched.has(slot)) return;
     touched.add(slot);
     const c = cellBySlot.get(slot);
     if (!c) return;
-    if (dragMode === "add") { selected.add(slot); c.classList.add("selected"); }
-    else { selected.delete(slot); c.classList.remove("selected"); }
+    if (dragMode === "add") { selected.add(slot); c.classList.add("selected"); setPressed(c, true); }
+    else { selected.delete(slot); c.classList.remove("selected"); setPressed(c, false); }
   };
 
+  const toggleSlot = (slot) => {
+    const c = cellBySlot.get(slot);
+    if (!c) return;
+    if (selected.has(slot)) { selected.delete(slot); c.classList.remove("selected"); setPressed(c, false); }
+    else { selected.add(slot); c.classList.add("selected"); setPressed(c, true); }
+    save();
+  };
+
+  const indicator = document.getElementById("save-indicator");
+  const indicatorText = indicator?.querySelector(".save-indicator__text");
+  let savedAt = Date.now();
+  let relTimer = null;
+  let collapseTimer = null;
+  const COLLAPSE_AFTER_MS = 60000;
+
+  function formatSince(ts) {
+    const secs = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (secs < 10) return "just now";
+    if (secs < 60) return `${secs}s ago`;
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ago`;
+  }
+  function expand() {
+    indicator?.classList.remove("save-indicator--collapsed");
+  }
+  function scheduleCollapse() {
+    if (collapseTimer) clearTimeout(collapseTimer);
+    collapseTimer = setTimeout(() => {
+      indicator?.classList.add("save-indicator--collapsed");
+    }, COLLAPSE_AFTER_MS);
+  }
+  function renderSaved() {
+    if (!indicator || !indicatorText) return;
+    indicator.dataset.state = "saved";
+    indicatorText.textContent = `Saved · ${formatSince(savedAt)}`;
+  }
+  function renderSaving() {
+    if (!indicator || !indicatorText) return;
+    if (relTimer) { clearInterval(relTimer); relTimer = null; }
+    if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
+    expand();
+    indicator.dataset.state = "saving";
+    indicatorText.textContent = "Saving…";
+  }
+  function renderError() {
+    if (!indicator) return;
+    if (relTimer) { clearInterval(relTimer); relTimer = null; }
+    if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
+    expand();
+    indicator.dataset.state = "error";
+    indicator.innerHTML = '<span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text">Couldn\u2019t save — </span><button type="button" class="save-indicator__retry">retry</button>';
+    indicator.querySelector(".save-indicator__retry")?.addEventListener("click", save);
+  }
+  function startRelTimer() {
+    if (relTimer) clearInterval(relTimer);
+    relTimer = setInterval(renderSaved, 15000);
+  }
+
   let saveTimer = null;
+  let inFlight = 0;
+  const isDirty = () => saveTimer !== null || inFlight > 0;
+  window.addEventListener("beforeunload", (e) => {
+    if (!isDirty()) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
   function save() {
     if (saveTimer) clearTimeout(saveTimer);
+    renderSaving();
     saveTimer = setTimeout(() => {
+      saveTimer = null;
+      inFlight++;
       fetch(`/api/event/${EVENT.id}/cells`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
@@ -47,11 +126,34 @@
           slotIndices: [...selected].sort((a, b) => a - b),
         }),
       }).then(r => {
-        if (!r.ok) console.error("save failed", r.status);
+        inFlight--;
+        if (!r.ok) {
+          console.error("save failed", r.status);
+          renderError();
+          return;
+        }
+        if (inFlight === 0 && !saveTimer) {
+          savedAt = Date.now();
+          if (indicator && !indicator.querySelector(".save-indicator__text")) {
+            indicator.innerHTML = '<span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text"></span>';
+          }
+          renderSaved();
+          startRelTimer();
+          scheduleCollapse();
+        }
         if (window.htmx) window.htmx.trigger("#results", "refresh");
-      }).catch(err => console.error("save error", err));
-    }, 250);
+      }).catch(err => {
+        inFlight--;
+        console.error("save error", err);
+        renderError();
+      });
+    }, 600);
   }
+
+  savedAt = Date.now();
+  renderSaved();
+  startRelTimer();
+  scheduleCollapse();
 
   const endDrag = () => {
     if (dragMode === null) return;
@@ -94,4 +196,26 @@
   }, { passive: false });
   grid.addEventListener("touchend", endDrag);
   grid.addEventListener("touchcancel", endDrag);
+
+  // Keyboard
+  grid.addEventListener("keydown", (e) => {
+    const s = slotOf(e.target);
+    if (s < 0) return;
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      toggleSlot(s);
+      return;
+    }
+    let next = -1;
+    if (e.key === "ArrowUp") next = s - 1;
+    else if (e.key === "ArrowDown") next = s + 1;
+    else if (e.key === "ArrowLeft") next = s - rows;
+    else if (e.key === "ArrowRight") next = s + rows;
+    else return;
+    const target = cellBySlot.get(next);
+    if (target) {
+      e.preventDefault();
+      target.focus();
+    }
+  });
 })();

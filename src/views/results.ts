@@ -20,11 +20,11 @@ function formatBestSlot(slot: string): string {
   const date = slot.slice(0, 10);
   const time = slot.slice(11);
   const [y, m, d] = date.split("-").map(Number);
-  if (y === 1970) {
-    const dt = new Date(Date.UTC(y, m - 1, d));
-    return `${DOW_NAMES[dt.getUTCDay()]} ${time}`;
-  }
-  return slot;
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return slot;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = DOW_NAMES[dt.getUTCDay()];
+  if (y === 1970) return `${dow} ${time}`;
+  return `${dow} ${m}/${d} · ${time}`;
 }
 
 function safeJson(value: unknown): string {

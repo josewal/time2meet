@@ -66,19 +66,33 @@ function formatDayHeader(
   }
 }
 
-function gridHeaderRow(days: string[]): string {
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+export function computeDayGaps(days: string[]): boolean[] {
+  const gaps: boolean[] = new Array(days.length).fill(false);
+  for (let i = 1; i < days.length; i++) {
+    const prev = Date.parse(`${days[i - 1]}T00:00:00Z`);
+    const curr = Date.parse(`${days[i]}T00:00:00Z`);
+    if (Number.isFinite(prev) && Number.isFinite(curr) && curr - prev > MS_PER_DAY) {
+      gaps[i] = true;
+    }
+  }
+  return gaps;
+}
+
+function gridHeaderRow(days: string[], gaps: boolean[]): string {
   const parts: string[] = ['<div class="grid-corner"></div>'];
   let prevMonth: number | null = null;
-  for (const day of days) {
+  days.forEach((day, i) => {
     const { dow, date, month } = formatDayHeader(day, prevMonth);
     prevMonth = month;
     const dateLine = date
       ? `<span class="grid-day-date">${escape(date)}</span>`
       : "";
+    const gapCls = gaps[i] ? " grid-day-header--gap" : "";
     parts.push(
-      `<div class="grid-day-header"><span class="grid-day-dow">${escape(dow)}</span>${dateLine}</div>`,
+      `<div class="grid-day-header${gapCls}"><span class="grid-day-dow">${escape(dow)}</span>${dateLine}</div>`,
     );
-  }
+  });
   return parts.join("");
 }
 
@@ -95,18 +109,20 @@ function timeLabelFor(slots: string[], rowIndex: number): string {
 export function gridMarkup(data: EventClientData): string {
   const rows = data.slotsPerDay;
   const cols = data.days.length;
+  const gaps = computeDayGaps(data.days);
   const parts: string[] = [];
   parts.push(
     `<div id="grid" class="grid" data-cols="${cols}" data-rows="${rows}" style="--cols:${cols};">`,
   );
-  parts.push(gridHeaderRow(data.days));
+  parts.push(gridHeaderRow(data.days, gaps));
   for (let r = 0; r < rows; r++) {
     parts.push(
       `<div class="grid-time-label">${escape(timeLabelFor(data.slots, r))}</div>`,
     );
     for (let c = 0; c < cols; c++) {
       const slotIndex = c * rows + r;
-      parts.push(`<div class="cell" data-slot="${slotIndex}"></div>`);
+      const gapCls = gaps[c] ? " cell--gap" : "";
+      parts.push(`<div class="cell${gapCls}" data-slot="${slotIndex}"></div>`);
     }
   }
   parts.push("</div>");
@@ -121,11 +137,12 @@ export function heatmapMarkup(
 ): string {
   const rows = data.slotsPerDay;
   const cols = data.days.length;
+  const gaps = computeDayGaps(data.days);
   const parts: string[] = [];
   parts.push(
     `<div class="grid heatmap" data-cols="${cols}" data-rows="${rows}" style="--cols:${cols};">`,
   );
-  parts.push(gridHeaderRow(data.days));
+  parts.push(gridHeaderRow(data.days, gaps));
   const denom = maxCount > 0 ? maxCount : 1;
   for (let r = 0; r < rows; r++) {
     parts.push(
@@ -138,8 +155,9 @@ export function heatmapMarkup(
       const title = cell.count > 0
         ? `${cell.count}/${total}: ${cell.names.join(", ")}`
         : `0/${total}`;
+      const gapCls = gaps[c] ? " cell--gap" : "";
       parts.push(
-        `<div class="cell heat" data-slot="${slotIndex}" data-count="${cell.count}" style="--intensity:${intensity};" title="${escape(title)}"></div>`,
+        `<div class="cell heat${gapCls}" data-slot="${slotIndex}" data-count="${cell.count}" style="--intensity:${intensity};" title="${escape(title)}"></div>`,
       );
     }
   }
@@ -172,7 +190,7 @@ export function editingAsBody(
   meName: string,
   initialCells: number[],
 ): string {
-  return `<h2 class="panel-title">Your availability</h2>
+  return `<h2 class="panel-title panel-title--with-status">Your availability <span id="save-indicator" class="save-indicator" data-state="saved" aria-live="polite"><span class="save-indicator__dot" aria-hidden="true"></span><span class="save-indicator__text">Saved</span></span></h2>
 <p class="me">editing as <strong>${escape(meName)}</strong> · <button type="button" class="linkish" hx-post="/event/${escape(eventData.id)}/logout">switch name</button></p>
 ${gridReady(eventData, initialCells)}
 <div id="identify-error"></div>`;
