@@ -8,6 +8,7 @@ import { pagesEventRoute } from "./routes/pages-event";
 import { identifyRoute } from "./routes/identify";
 import { cellsRoute } from "./routes/cells";
 import { ogRoute } from "./routes/og";
+import { faviconRoute } from "./routes/favicon";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -22,6 +23,7 @@ app.route("/", pagesEventRoute);
 app.route("/", identifyRoute);
 app.route("/", cellsRoute);
 app.route("/", ogRoute);
+app.route("/", faviconRoute);
 
 app.onError((err, c) => {
   console.error(err);

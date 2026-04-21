@@ -30,6 +30,7 @@ pagesEventRoute.get("/event/:id", async (c) => {
   const host = new URL(c.req.url);
   const ogImageUrl = `${host.origin}/event/${id}/og.png?v=${ev.updated_at}`;
   const ogUrl = `${host.origin}/event/${id}`;
+  const faviconUrl = `/event/${id}/favicon.svg?v=${ev.updated_at}`;
 
   const html = layout(
     {
@@ -37,6 +38,7 @@ pagesEventRoute.get("/event/:id", async (c) => {
       description: `${parts.length} responses. Click to add your availability.`,
       ogImageUrl,
       ogUrl,
+      faviconUrl,
     },
     eventView(ev, me, parts, ogUrl),
   );

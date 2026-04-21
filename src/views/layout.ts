@@ -3,6 +3,7 @@ export type LayoutMeta = {
   description?: string;
   ogImageUrl?: string;
   ogUrl?: string;
+  faviconUrl?: string;
 };
 
 export function escape(s: string): string {
@@ -20,7 +21,7 @@ export function layout(meta: LayoutMeta, bodyHtml: string): string {
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     `<title>${escape(meta.title)}</title>`,
     '<link rel="stylesheet" href="/styles.css">',
-    '<link rel="icon" href="/favicon.svg">',
+    `<link rel="icon" href="${escape(meta.faviconUrl ?? "/favicon.svg")}">`,
     '<script src="/htmx.min.js" defer></script>',
     '<script src="/crosshair.js" defer></script>',
   ];
